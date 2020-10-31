@@ -1,6 +1,8 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <cmath>
 #include <stdexcept>
+#include <fstream>
 
 const int k_maxMessageLength = 1024;
 
@@ -33,6 +35,9 @@ public:
     }
 
 private:
+    static constexpr int m_size = 16;
+    float m_array[m_size];
+
     const char* m_windowTitle;
     int m_numTriangles;
     GLFWwindow* m_window;
@@ -75,9 +80,18 @@ private:
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        GLuint color = glGetUniformLocation(m_program, "windowSize");
         glUseProgram(m_program);
+
+        GLuint color = glGetUniformLocation(m_program, "windowSize");
         glUniform2f(color, g_windowWidth, g_windowHeight);
+
+        GLuint values = glGetUniformLocation(m_program, "values");
+        for (int i = 0; i < m_size; i++) {
+            float x = static_cast<float>(i) / m_size;
+            m_array[i] = 0.5 + 0.2 * std::tanh(std::sin(x * x * 30 + (glfwGetTime() * 5)) * std::pow(std::sin(x * M_PI), 2) * 1.5);
+        };
+        glUniform1fv(values, m_size, m_array);
+
         glDrawElements(GL_TRIANGLES, 3 * m_numTriangles, GL_UNSIGNED_INT, (void*)0);
     }
 
@@ -258,15 +272,14 @@ int main(int argc, char** argv)
                                       "{\n"
                                       "    gl_Position = vec4(pos, 1, 1);\n"
                                       "}\n");
-    const char* fragmentShaderSource = ("#version 130\n"
-                                        "uniform vec2 windowSize;\n"
-                                        "out vec3 fragColor;\n"
-                                        "void main()\n"
-                                        "{\n"
-                                        "    vec2 pos = gl_FragCoord.xy / windowSize;\n"
-                                        "    fragColor = vec3(pos, 1.0);\n"
-                                        "}\n");
-    ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource);
+
+    std::ifstream ifs("fragment_shader.glsl");
+    std::string fragmentShaderSource(
+        (std::istreambuf_iterator<char>(ifs)),
+        std::istreambuf_iterator<char>()
+    );
+
+    ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource.c_str());
 
     GLuint program = shaderProgram.getProgram();
     Rectangle rectangle(program);
