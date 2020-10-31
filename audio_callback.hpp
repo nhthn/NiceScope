@@ -10,5 +10,5 @@ public:
     void process(float* const* input_buffer, float** output_buffer, int frame_count);
 
 private:
-    float m_buffer[16];
+    float m_buffer[64];
 };

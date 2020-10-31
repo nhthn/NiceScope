@@ -5,7 +5,7 @@ float* AudioCallback::getBuffer() {
 }
 
 void AudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) {
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 64; i++) {
         m_buffer[i] = input_buffer[0][i];
     }
 }

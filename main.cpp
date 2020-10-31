@@ -37,7 +37,7 @@ public:
     }
 
 private:
-    static constexpr int m_size = 16;
+    static constexpr int m_size = 64;
     float m_array[m_size];
 
     const char* m_windowTitle;

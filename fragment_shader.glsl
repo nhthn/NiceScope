@@ -1,6 +1,6 @@
 #version 130
 uniform vec2 windowSize;
-uniform float values[16];
+uniform float values[64];
 out vec3 fragColor;
 
 float cubicInterpolate(float t, float y0, float y1, float y2, float y3)
