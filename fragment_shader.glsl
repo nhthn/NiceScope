@@ -2,6 +2,17 @@
 uniform vec2 windowSize;
 uniform float values[16];
 out vec3 fragColor;
+
+float cubicInterpolate(float t, float y0, float y1, float y2, float y3)
+{
+    return (
+        (-y0 + 3 * y1 - 3 * y2 + y3) * t * t * t
+        + (2 * y0 - 5 * y1 + 4 * y2 - y3) * t * t
+        + (-y0 + y2) * t
+        + 2 * y1
+    ) * 0.5;
+}
+
 void main()
 {
     vec2 pos = gl_FragCoord.xy / windowSize;
@@ -12,17 +23,7 @@ void main()
     int i2 = i1 + 1;
     int i0 = max(i1 - 1, 0);
     int i3 = min(i1 + 2, values.length() - 1);
-
-    float y0 = values[i0];
-    float y1 = values[i1];
-    float y2 = values[i2];
-    float y3 = values[i3];
-    float y = (
-        (-y0 + 3 * y1 - 3 * y2 + y3) * t * t * t
-        + (2 * y0 - 5 * y1 + 4 * y2 - y3) * t * t
-        + (-y0 + y2) * t
-        + 2 * y1
-    ) * 0.5;
+    float y = cubicInterpolate(t, values[i0], values[i1], values[i2], values[i3]);
 
     float lineTop = y * windowSize.y + 1.5;
     float lineBottom = y * windowSize.y - 1.5;
