@@ -1,5 +1,7 @@
 #include "main.hpp"
 
+constexpr int k_bufferSize = 256;
+
 const int k_maxMessageLength = 1024;
 
 static int g_windowWidth = 640;
@@ -10,7 +12,7 @@ public:
     MinimalOpenGLApp(const char* windowTitle)
         : m_windowTitle(windowTitle)
     {
-        m_callback = new AudioCallback();
+        m_callback = new VisualizerAudioCallback();
         setUpWindow();
         setUpOpenGL();
     }
@@ -37,7 +39,7 @@ public:
     }
 
 private:
-    static constexpr int m_size = 64;
+    static constexpr int m_size = k_bufferSize;
     float m_array[m_size];
 
     const char* m_windowTitle;
@@ -45,7 +47,7 @@ private:
     GLFWwindow* m_window;
     GLuint m_program;
 
-    AudioCallback* m_callback;
+    VisualizerAudioCallback* m_callback;
 
     void setUpWindow()
     {
@@ -265,6 +267,32 @@ private:
         glDeleteVertexArrays(1, &m_vao);
     }
 };
+
+VisualizerAudioCallback::VisualizerAudioCallback()
+    : m_bufferSize(k_bufferSize)
+{
+    m_writePos = 0;
+    m_buffer = static_cast<float*>(malloc(sizeof(float) * m_bufferSize));
+    for (int i = 0; i < m_bufferSize; i++) {
+        m_buffer[i] = 0;
+    }
+}
+
+VisualizerAudioCallback::~VisualizerAudioCallback()
+{
+    free(m_buffer);
+}
+
+void VisualizerAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
+{
+    for (int i = 0; i < frame_count; i++) {
+        m_buffer[m_writePos] = input_buffer[0][i];
+        m_writePos += 1;
+        if (m_writePos == m_bufferSize) {
+            m_writePos = 0;
+        }
+    }
+}
 
 int main(int argc, char** argv)
 {

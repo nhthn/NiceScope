@@ -1,7 +1,14 @@
 #pragma once
 #include <iostream>
 #include "portaudio.h"
-#include "audio_callback.hpp"
+
+typedef float* const* InputBuffer;
+typedef float** OutputBuffer;
+
+class AudioCallback {
+public:
+    virtual void process(float* const* input_buffer, float** output_buffer, int frame_count) = 0;
+};
 
 class PortAudioBackend {
 public:
