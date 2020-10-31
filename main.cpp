@@ -1,8 +1,4 @@
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include <cmath>
-#include <stdexcept>
-#include <fstream>
+#include "main.hpp"
 
 const int k_maxMessageLength = 1024;
 
@@ -14,6 +10,7 @@ public:
     MinimalOpenGLApp(const char* windowTitle)
         : m_windowTitle(windowTitle)
     {
+        m_callback = new AudioCallback();
         setUpWindow();
         setUpOpenGL();
     }
@@ -34,6 +31,11 @@ public:
         m_numTriangles = numTriangles;
     }
 
+    AudioCallback* getAudioCallback()
+    {
+        return m_callback;
+    }
+
 private:
     static constexpr int m_size = 16;
     float m_array[m_size];
@@ -42,6 +44,8 @@ private:
     int m_numTriangles;
     GLFWwindow* m_window;
     GLuint m_program;
+
+    AudioCallback* m_callback;
 
     void setUpWindow()
     {
@@ -88,7 +92,7 @@ private:
         GLuint values = glGetUniformLocation(m_program, "values");
         for (int i = 0; i < m_size; i++) {
             float x = static_cast<float>(i) / m_size;
-            m_array[i] = 0.5 + 0.2 * std::tanh(std::sin(x * x * 30 + (glfwGetTime() * 5)) * std::pow(std::sin(x * M_PI), 2) * 1.5);
+            m_array[i] = 0.5 + 0.2 * m_callback->getBuffer()[i];
         };
         glUniform1fv(values, m_size, m_array);
 
@@ -265,6 +269,9 @@ private:
 int main(int argc, char** argv)
 {
     MinimalOpenGLApp app("Hello OpenGL");
+
+    PortAudioBackend audioBackend(app.getAudioCallback());
+    audioBackend.run();
 
     const char* vertexShaderSource = ("#version 130\n"
                                       "in vec2 pos;\n"
