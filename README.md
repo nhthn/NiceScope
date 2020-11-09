@@ -1,6 +1,6 @@
 ## Visualizer
 
-This is an unfinished attempt to create a minimal, beautiful, and highly configurable scope for the Linux pro audio ecosystem. Drawing is done purely on the GPU with a fragment shader.
+This is an unfinished attempt to create a minimal, beautiful, and highly configurable scope for the Linux pro audio ecosystem.
 
 Done:
 
