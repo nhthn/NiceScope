@@ -91,13 +91,6 @@ private:
         GLuint color = glGetUniformLocation(m_program, "windowSize");
         glUniform2f(color, g_windowWidth, g_windowHeight);
 
-        GLuint values = glGetUniformLocation(m_program, "values");
-        for (int i = 0; i < m_size; i++) {
-            float x = static_cast<float>(i) / m_size;
-            m_array[i] = 0.5 + 0.2 * m_callback->getBuffer()[i];
-        };
-        glUniform1fv(values, m_size, m_array);
-
         glDrawElements(GL_TRIANGLES, 3 * m_numTriangles, GL_UNSIGNED_INT, (void*)0);
     }
 
