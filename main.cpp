@@ -7,14 +7,33 @@ const int k_maxMessageLength = 1024;
 static int g_windowWidth = 640;
 static int g_windowHeight = 480;
 
+GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle) {
+    if (!glfwInit()) {
+        throw std::runtime_error("GLFW initialization failed.");
+    }
+    GLFWwindow* window = glfwCreateWindow(g_windowWidth, g_windowHeight, windowTitle, NULL, NULL);
+    if (!window) {
+        glfwTerminate();
+        throw std::runtime_error("GLFW initialization failed.");
+    }
+    glfwMakeContextCurrent(window);
+
+    glewExperimental = GL_TRUE;
+    glewInit();
+    if (!glCreateShader) {
+        throw std::runtime_error("Unsuccessful GLEW initialization.");
+    }
+
+    return window;
+}
+
 class MinimalOpenGLApp {
 public:
-    MinimalOpenGLApp(const char* windowTitle)
-        : m_windowTitle(windowTitle)
+    MinimalOpenGLApp(GLFWwindow* window)
     {
         m_callback = new VisualizerAudioCallback();
-        setUpWindow();
-        setUpOpenGL();
+        m_window = window;
+        glfwSetFramebufferSizeCallback(m_window, resize);
     }
 
     void setProgram(GLuint program)
@@ -48,29 +67,6 @@ private:
     GLuint m_program;
 
     VisualizerAudioCallback* m_callback;
-
-    void setUpWindow()
-    {
-        if (!glfwInit()) {
-            throw std::runtime_error("GLFW initialization failed.");
-        }
-        m_window = glfwCreateWindow(g_windowWidth, g_windowHeight, m_windowTitle, NULL, NULL);
-        if (!m_window) {
-            glfwTerminate();
-            throw std::runtime_error("GLFW initialization failed.");
-        }
-        glfwMakeContextCurrent(m_window);
-        glfwSetFramebufferSizeCallback(m_window, resize);
-    }
-
-    void setUpOpenGL()
-    {
-        glewExperimental = GL_TRUE;
-        glewInit();
-        if (!glCreateShader) {
-            throw std::runtime_error("Unsuccessful GLEW initialization.");
-        }
-    }
 
     void mainLoop()
     {
@@ -313,7 +309,8 @@ void VisualizerAudioCallback::process(InputBuffer input_buffer, OutputBuffer out
 
 int main(int argc, char** argv)
 {
-    MinimalOpenGLApp app("Hello OpenGL");
+    auto window = setUpWindowAndOpenGL("Scope");
+    MinimalOpenGLApp app(window);
 
     PortAudioBackend audioBackend(app.getAudioCallback());
     audioBackend.run();
