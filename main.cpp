@@ -308,13 +308,17 @@ int main(int argc, char** argv)
                                       "    gl_Position = vec4(pos, 1, 1);\n"
                                       "}\n");
 
-    std::ifstream ifs("fragment_shader.glsl");
-    std::string fragmentShaderSource(
-        (std::istreambuf_iterator<char>(ifs)),
-        std::istreambuf_iterator<char>()
+    const char* fragmentShaderSource = (
+        "#version 130\n"
+        "uniform vec2 windowSize;\n"
+        "out vec3 fragColor;\n"
+        "void main()\n"
+        "{\n"
+        "fragColor = vec3(1.0);\n"
+        "}\n"
     );
 
-    ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource.c_str());
+    ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource);
 
     GLuint program = shaderProgram.getProgram();
     Rectangle rectangle(program);
