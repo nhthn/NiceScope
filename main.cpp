@@ -203,12 +203,36 @@ private:
 
 class Rectangle {
 public:
-    Rectangle(GLuint program)
-        : m_program(program)
+    Rectangle()
     {
+        const char* vertexShaderSource = ("#version 130\n"
+                                          "in vec2 pos;\n"
+                                          "void main()\n"
+                                          "{\n"
+                                          "    gl_Position = vec4(pos, 1, 1);\n"
+                                          "}\n");
+
+        const char* fragmentShaderSource = (
+            "#version 130\n"
+            "uniform vec2 windowSize;\n"
+            "out vec3 fragColor;\n"
+            "void main()\n"
+            "{\n"
+            "fragColor = vec3(1.0);\n"
+            "}\n"
+        );
+
+        ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource);
+        m_program = shaderProgram.getProgram();
+
         makeVertexBuffer();
         makeArrayBuffer();
         makeElementBuffer();
+    }
+
+    int getProgram()
+    {
+        return m_program;
     }
 
     int getNumTriangles()
@@ -301,29 +325,9 @@ int main(int argc, char** argv)
     PortAudioBackend audioBackend(app.getAudioCallback());
     audioBackend.run();
 
-    const char* vertexShaderSource = ("#version 130\n"
-                                      "in vec2 pos;\n"
-                                      "void main()\n"
-                                      "{\n"
-                                      "    gl_Position = vec4(pos, 1, 1);\n"
-                                      "}\n");
-
-    const char* fragmentShaderSource = (
-        "#version 130\n"
-        "uniform vec2 windowSize;\n"
-        "out vec3 fragColor;\n"
-        "void main()\n"
-        "{\n"
-        "fragColor = vec3(1.0);\n"
-        "}\n"
-    );
-
-    ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource);
-
-    GLuint program = shaderProgram.getProgram();
-    Rectangle rectangle(program);
+    Rectangle rectangle;
     app.setNumTriangles(rectangle.getNumTriangles());
-    app.setProgram(program);
+    app.setProgram(rectangle.getProgram());
     app.run();
     return 0;
 }
