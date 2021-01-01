@@ -41,12 +41,6 @@ public:
         m_program = program;
     }
 
-    void run()
-    {
-        mainLoop();
-        cleanUpWindow();
-    }
-
     void setNumTriangles(int numTriangles)
     {
         m_numTriangles = numTriangles;
@@ -68,26 +62,8 @@ private:
 
     VisualizerAudioCallback* m_callback;
 
-    void mainLoop()
-    {
-        while (!glfwWindowShouldClose(m_window)) {
-            render();
-            glfwSwapBuffers(m_window);
-            glfwPollEvents();
-        }
-    }
-
     void render()
     {
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glUseProgram(m_program);
-
-        GLuint color = glGetUniformLocation(m_program, "windowSize");
-        glUniform2f(color, g_windowWidth, g_windowHeight);
-
-        glDrawElements(GL_TRIANGLES, 3 * m_numTriangles, GL_UNSIGNED_INT, (void*)0);
     }
 
     static void resize(GLFWwindow* window, int width, int height)
@@ -95,11 +71,6 @@ private:
         glViewport(0, 0, (GLsizei)width, (GLsizei)height);
         g_windowWidth = width;
         g_windowHeight = height;
-    }
-
-    void cleanUpWindow()
-    {
-        glfwTerminate();
     }
 };
 
@@ -219,6 +190,11 @@ public:
         makeElementBuffer();
     }
 
+    ~Rectangle()
+    {
+        cleanUp();
+    }
+
     int getProgram()
     {
         return m_program;
@@ -229,9 +205,16 @@ public:
         return m_numTriangles;
     }
 
-    ~Rectangle()
-    {
-        cleanUp();
+    void render() {
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glUseProgram(m_program);
+
+        GLuint color = glGetUniformLocation(m_program, "windowSize");
+        glUniform2f(color, g_windowWidth, g_windowHeight);
+
+        glDrawElements(GL_TRIANGLES, 3 * m_numTriangles, GL_UNSIGNED_INT, (void*)0);
     }
 
 private:
@@ -316,8 +299,14 @@ int main(int argc, char** argv)
     audioBackend.run();
 
     Rectangle rectangle;
-    app.setNumTriangles(rectangle.getNumTriangles());
-    app.setProgram(rectangle.getProgram());
-    app.run();
+
+    while (!glfwWindowShouldClose(window)) {
+        rectangle.render();
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glfwTerminate();
     return 0;
 }
