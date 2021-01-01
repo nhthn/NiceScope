@@ -206,6 +206,14 @@ public:
     }
 
     void render() {
+        t++;
+        m_coordinates[1] = sinf((float)t / 100) + 0.1;
+        m_coordinates[3] = sinf((float)t / 100) - 0.1;
+        m_coordinates[5] = cosf((float)t / 100) + 0.1;
+        m_coordinates[7] = cosf((float)t / 100) - 0.1;
+
+        glBufferData(GL_ARRAY_BUFFER, sizeof(m_coordinates), m_coordinates, GL_STREAM_DRAW);
+
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -225,12 +233,12 @@ private:
     GLuint m_ebo;
     GLfloat m_coordinates[8] = { -1, -1, -1, 1, 1, -1, 1, 1 };
     GLuint m_elements[6] = { 0, 1, 2, 1, 2, 3 };
+    int t = 0;
 
     void makeVertexBuffer()
     {
         glGenBuffers(1, &m_vbo);
         glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(m_coordinates), m_coordinates, GL_STATIC_DRAW);
     }
 
     void makeArrayBuffer()
