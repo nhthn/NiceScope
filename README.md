@@ -9,7 +9,6 @@ Done:
 
 Todo:
 
-- Attractive GPU-based curve drawing by computing distance from a cubic spline.
 - Consider using UBO or texture to transfer point data.
 
 Goals:
@@ -22,3 +21,6 @@ Goals:
 - Spectrogram plot?
 - Text-based configuration, no fancy-pants GUI.
 
+## Questions
+
+Multiple programs?
