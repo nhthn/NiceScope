@@ -185,17 +185,19 @@ public:
         ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource);
         m_program = shaderProgram.getProgram();
 
-        m_coordinates = new GLfloat[8];
-        m_coordinates[0] = -1;
-        m_coordinates[1] = -1;
-        m_coordinates[2] = -1;
-        m_coordinates[3] = 1;
-        m_coordinates[4] = 1;
-        m_coordinates[5] = -1;
-        m_coordinates[6] = 1;
-        m_coordinates[7] = 1;
+        // Each segment has two points, plus an additional two points at the end
+        // of the strip. Each point has two coordinates.
+        m_coordinatesLength = 4 * (m_numSegments + 1);
+        m_coordinates = new GLfloat[m_coordinatesLength];
+        for (int i = 0; i < m_numSegments + 1; i++) {
+            float x = -1 + (float)2 * i / m_numSegments;
+            m_coordinates[4 * i + 0] = x;
+            m_coordinates[4 * i + 1] = -1;
+            m_coordinates[4 * i + 2] = x;
+            m_coordinates[4 * i + 3] = 1;
+        }
 
-        m_elements = new GLuint[6];
+        m_elements = new GLuint[m_elementsLength];
         m_elements[0] = 0;
         m_elements[1] = 1;
         m_elements[2] = 2;
@@ -244,6 +246,7 @@ public:
     }
 
 private:
+    int m_numSegments = 1;
     int m_numTriangles = 2;
     GLuint m_program;
     GLuint m_vao;
