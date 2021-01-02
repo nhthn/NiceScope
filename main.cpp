@@ -46,7 +46,7 @@ public:
         m_numTriangles = numTriangles;
     }
 
-    AudioCallback* getAudioCallback()
+    VisualizerAudioCallback* getAudioCallback()
     {
         return m_callback;
     }
@@ -163,7 +163,7 @@ private:
 
 class Rectangle {
 public:
-    Rectangle()
+    Rectangle(int numPoints)
     {
         const char* vertexShaderSource = ("#version 130\n"
                                           "in vec2 pos;\n"
@@ -184,6 +184,8 @@ public:
 
         ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource);
         m_program = shaderProgram.getProgram();
+
+        m_numSegments = numPoints - 1;
 
         // Each segment has two points, plus an additional two points at the end
         // of the strip. Each point has two coordinates.
@@ -229,11 +231,11 @@ public:
         return m_numTriangles;
     }
 
-    void render() {
+    void render(float* buffer) {
         t++;
         for (int i = 0; i < m_numSegments + 1; i++) {
-            m_coordinates[4 * i + 1] = sinf((float)t / 100 + i) + 0.1;
-            m_coordinates[4 * i + 3] = sinf((float)t / 100 + i) - 0.1;
+            m_coordinates[4 * i + 1] = buffer[i] + 0.01;
+            m_coordinates[4 * i + 3] = buffer[i] - 0.01;
         }
 
         glBufferData(GL_ARRAY_BUFFER, m_coordinatesLength * sizeof(GLfloat), m_coordinates, GL_STREAM_DRAW);
@@ -333,10 +335,10 @@ int main(int argc, char** argv)
     PortAudioBackend audioBackend(app.getAudioCallback());
     audioBackend.run();
 
-    Rectangle rectangle;
+    Rectangle rectangle(app.getAudioCallback()->getBufferSize());
 
     while (!glfwWindowShouldClose(window)) {
-        rectangle.render();
+        rectangle.render(app.getAudioCallback()->getBuffer());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
