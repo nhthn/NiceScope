@@ -197,13 +197,17 @@ public:
             m_coordinates[4 * i + 3] = 1;
         }
 
+        m_numTriangles = 2 * m_numSegments;
+        m_elementsLength = 3 * m_numTriangles;
         m_elements = new GLuint[m_elementsLength];
-        m_elements[0] = 0;
-        m_elements[1] = 1;
-        m_elements[2] = 2;
-        m_elements[3] = 1;
-        m_elements[4] = 2;
-        m_elements[5] = 3;
+        for (int i = 0; i < m_numSegments; i++) {
+            m_elements[6 * i + 0] = 2 * i + 0;
+            m_elements[6 * i + 1] = 2 * i + 1;
+            m_elements[6 * i + 2] = 2 * i + 2;
+            m_elements[6 * i + 3] = 2 * i + 1;
+            m_elements[6 * i + 4] = 2 * i + 2;
+            m_elements[6 * i + 5] = 2 * i + 3;
+        }
 
         makeVertexBuffer();
         makeArrayBuffer();
@@ -227,10 +231,10 @@ public:
 
     void render() {
         t++;
-        m_coordinates[1] = sinf((float)t / 100) + 0.1;
-        m_coordinates[3] = sinf((float)t / 100) - 0.1;
-        m_coordinates[5] = cosf((float)t / 100) + 0.1;
-        m_coordinates[7] = cosf((float)t / 100) - 0.1;
+        for (int i = 0; i < m_numSegments + 1; i++) {
+            m_coordinates[4 * i + 1] = sinf((float)t / 100 + i) + 0.1;
+            m_coordinates[4 * i + 3] = sinf((float)t / 100 + i) - 0.1;
+        }
 
         glBufferData(GL_ARRAY_BUFFER, m_coordinatesLength * sizeof(GLfloat), m_coordinates, GL_STREAM_DRAW);
 
@@ -246,16 +250,16 @@ public:
     }
 
 private:
-    int m_numSegments = 1;
-    int m_numTriangles = 2;
+    int m_numSegments = 64;
+    int m_numTriangles;
     GLuint m_program;
     GLuint m_vao;
     GLuint m_vbo;
     GLuint m_ebo;
     GLfloat* m_coordinates;
-    int m_coordinatesLength = 8;
+    int m_coordinatesLength;
     GLuint* m_elements;
-    int m_elementsLength = 6;
+    int m_elementsLength;
     int t = 0;
 
     void makeVertexBuffer()
