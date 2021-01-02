@@ -185,6 +185,24 @@ public:
         ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource);
         m_program = shaderProgram.getProgram();
 
+        m_coordinates = new GLfloat[8];
+        m_coordinates[0] = -1;
+        m_coordinates[1] = -1;
+        m_coordinates[2] = -1;
+        m_coordinates[3] = 1;
+        m_coordinates[4] = 1;
+        m_coordinates[5] = -1;
+        m_coordinates[6] = 1;
+        m_coordinates[7] = 1;
+
+        m_elements = new GLuint[6];
+        m_elements[0] = 0;
+        m_elements[1] = 1;
+        m_elements[2] = 2;
+        m_elements[3] = 1;
+        m_elements[4] = 2;
+        m_elements[5] = 3;
+
         makeVertexBuffer();
         makeArrayBuffer();
         makeElementBuffer();
@@ -212,7 +230,7 @@ public:
         m_coordinates[5] = cosf((float)t / 100) + 0.1;
         m_coordinates[7] = cosf((float)t / 100) - 0.1;
 
-        glBufferData(GL_ARRAY_BUFFER, sizeof(m_coordinates), m_coordinates, GL_STREAM_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, m_coordinatesLength * sizeof(GLfloat), m_coordinates, GL_STREAM_DRAW);
 
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -231,8 +249,10 @@ private:
     GLuint m_vao;
     GLuint m_vbo;
     GLuint m_ebo;
-    GLfloat m_coordinates[8] = { -1, -1, -1, 1, 1, -1, 1, 1 };
-    GLuint m_elements[6] = { 0, 1, 2, 1, 2, 3 };
+    GLfloat* m_coordinates;
+    int m_coordinatesLength = 8;
+    GLuint* m_elements;
+    int m_elementsLength = 6;
     int t = 0;
 
     void makeVertexBuffer()
@@ -253,7 +273,7 @@ private:
     {
         glGenBuffers(1, &m_ebo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(m_elements), m_elements, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_elementsLength * sizeof(GLuint), m_elements, GL_STATIC_DRAW);
     }
 
     void cleanUp()
