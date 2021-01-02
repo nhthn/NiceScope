@@ -4,8 +4,8 @@ constexpr int k_bufferSize = 256;
 
 const int k_maxMessageLength = 1024;
 
-static int g_windowWidth = 640;
-static int g_windowHeight = 480;
+volatile static int g_windowWidth = 640;
+volatile static int g_windowHeight = 480;
 
 GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle) {
     if (!glfwInit()) {
@@ -232,10 +232,10 @@ public:
     }
 
     void render(float* buffer) {
-        t++;
+        float thicknessInWindowCoordinates = m_thicknessInPixels / g_windowHeight;
         for (int i = 0; i < m_numSegments + 1; i++) {
-            m_coordinates[4 * i + 1] = buffer[i] + 0.01;
-            m_coordinates[4 * i + 3] = buffer[i] - 0.01;
+            m_coordinates[4 * i + 1] = buffer[i] + thicknessInWindowCoordinates;
+            m_coordinates[4 * i + 3] = buffer[i] - thicknessInWindowCoordinates;
         }
 
         glBufferData(GL_ARRAY_BUFFER, m_coordinatesLength * sizeof(GLfloat), m_coordinates, GL_STREAM_DRAW);
@@ -262,7 +262,7 @@ private:
     int m_coordinatesLength;
     GLuint* m_elements;
     int m_elementsLength;
-    int t = 0;
+    float m_thicknessInPixels = 3;
 
     void makeVertexBuffer()
     {
