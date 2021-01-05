@@ -179,7 +179,8 @@ public:
         m_coordinatesLength = 4 * (m_numSegments + 1);
         m_coordinates = new GLfloat[m_coordinatesLength];
         for (int i = 0; i < m_numSegments + 1; i++) {
-            float x = -1 + (float)2 * i / m_numSegments;
+            float i_normalized = i / m_numSegments;
+            float x = -1 + (float)2 * std::log2(i + 1) / std::log2(m_numSegments + 1);
             m_coordinates[4 * i + 0] = x;
             m_coordinates[4 * i + 1] = -1;
             m_coordinates[4 * i + 2] = x;
@@ -344,22 +345,37 @@ FFTAudioCallback::~FFTAudioCallback()
     fftw_free(m_spectrum);
 }
 
+void FFTAudioCallback::doFFT()
+{
+    fftw_execute(m_fftwPlan);
+
+    float maxDb = -30;
+    for (int i = 0; i < m_spectrumSize; i++) {
+        float real = m_spectrum[i][0];
+        float imag = m_spectrum[i][1];
+        float magnitude = std::hypot(real, imag);
+        float db = 20 * std::log10(magnitude);
+        if (db > maxDb) {
+            maxDb = db;
+        }
+        m_buffer[i] = db;
+    }
+    for (int i = 0; i < m_spectrumSize; i++) {
+        float db = m_buffer[i];
+        float dbNormalized = (db + 60) / 60;
+        m_buffer[i] = 2 * dbNormalized - 1;
+    }
+
+    m_writePos = 0;
+}
+
 void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
 {
     for (int i = 0; i < frame_count; i++) {
         m_samples[m_writePos] = input_buffer[0][i];
         m_writePos += 1;
         if (m_writePos == m_bufferSize) {
-            fftw_execute(m_fftwPlan);
-
-            for (int j = 0; j < m_spectrumSize; j++) {
-                float real = m_spectrum[j][0];
-                float imag = m_spectrum[j][1];
-                float magnitude = std::hypot(real, imag);
-                m_buffer[j] = magnitude;
-            }
-
-            m_writePos = 0;
+            doFFT();
         }
     }
 }

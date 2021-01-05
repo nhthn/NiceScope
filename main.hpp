@@ -36,4 +36,5 @@ private:
     fftw_complex *m_spectrum;
     fftw_plan m_fftwPlan;
     float* m_buffer;
+    void doFFT();
 };
