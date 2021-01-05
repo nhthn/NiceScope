@@ -153,9 +153,9 @@ private:
     }
 };
 
-class Rectangle {
+class Scope {
 public:
-    Rectangle(int numPoints)
+    Scope(int numPoints)
     {
         const char* vertexShaderSource = ("#version 130\n"
                                           "in vec2 pos;\n"
@@ -208,7 +208,7 @@ public:
         makeElementBuffer();
     }
 
-    ~Rectangle()
+    ~Scope()
     {
         cleanUp();
     }
@@ -329,10 +329,10 @@ int main(int argc, char** argv)
     PortAudioBackend audioBackend(&callback);
     audioBackend.run();
 
-    Rectangle rectangle(callback.getBufferSize());
+    Scope scope(callback.getBufferSize());
 
     while (!glfwWindowShouldClose(window)) {
-        rectangle.render(callback.getBuffer());
+        scope.render(callback.getBuffer());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
