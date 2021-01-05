@@ -31,7 +31,6 @@ class MinimalOpenGLApp {
 public:
     MinimalOpenGLApp(GLFWwindow* window)
     {
-        m_callback = new VisualizerAudioCallback();
         m_window = window;
         glfwSetFramebufferSizeCallback(m_window, resize);
     }
@@ -46,11 +45,6 @@ public:
         m_numTriangles = numTriangles;
     }
 
-    VisualizerAudioCallback* getAudioCallback()
-    {
-        return m_callback;
-    }
-
 private:
     static constexpr int m_size = k_bufferSize;
     float m_array[m_size];
@@ -59,8 +53,6 @@ private:
     int m_numTriangles;
     GLFWwindow* m_window;
     GLuint m_program;
-
-    VisualizerAudioCallback* m_callback;
 
     void render()
     {
@@ -332,13 +324,15 @@ int main(int argc, char** argv)
     auto window = setUpWindowAndOpenGL("Scope");
     MinimalOpenGLApp app(window);
 
-    PortAudioBackend audioBackend(app.getAudioCallback());
+    VisualizerAudioCallback callback;
+
+    PortAudioBackend audioBackend(&callback);
     audioBackend.run();
 
-    Rectangle rectangle(app.getAudioCallback()->getBufferSize());
+    Rectangle rectangle(callback.getBufferSize());
 
     while (!glfwWindowShouldClose(window)) {
-        rectangle.render(app.getAudioCallback()->getBuffer());
+        rectangle.render(callback.getBuffer());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
