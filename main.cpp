@@ -1,7 +1,5 @@
 #include "main.hpp"
 
-constexpr int k_bufferSize = 256;
-
 const int k_maxMessageLength = 1024;
 
 volatile static int g_windowWidth = 640;
@@ -46,9 +44,6 @@ public:
     }
 
 private:
-    static constexpr int m_size = k_bufferSize;
-    float m_array[m_size];
-
     const char* m_windowTitle;
     int m_numTriangles;
     GLFWwindow* m_window;
@@ -293,8 +288,8 @@ private:
     }
 };
 
-VisualizerAudioCallback::VisualizerAudioCallback()
-    : m_bufferSize(k_bufferSize)
+VisualizerAudioCallback::VisualizerAudioCallback(int bufferSize)
+    : m_bufferSize(bufferSize)
 {
     m_writePos = 0;
     m_buffer = static_cast<float*>(malloc(sizeof(float) * m_bufferSize));
@@ -319,17 +314,68 @@ void VisualizerAudioCallback::process(InputBuffer input_buffer, OutputBuffer out
     }
 }
 
+FFTAudioCallback::FFTAudioCallback(int bufferSize)
+    : m_bufferSize(bufferSize),
+    m_spectrumSize(bufferSize / 2 + 1)
+{
+    m_writePos = 0;
+
+    m_samples = static_cast<double*>(fftw_malloc(sizeof(double) * m_bufferSize));
+    for (int i = 0; i < m_bufferSize; i++) {
+        m_samples[i] = 0;
+    }
+
+    m_spectrum = static_cast<fftw_complex*>(
+        fftw_malloc(sizeof(fftw_complex) * m_spectrumSize)
+    );
+
+    m_buffer = static_cast<float*>(malloc(sizeof(float) * m_spectrumSize));
+    for (int i = 0; i < m_spectrumSize; i++) {
+        m_buffer[i] = 0;
+    }
+
+    m_fftwPlan = fftw_plan_dft_r2c_1d(m_bufferSize, m_samples, m_spectrum, FFTW_MEASURE);
+}
+
+FFTAudioCallback::~FFTAudioCallback()
+{
+    fftw_destroy_plan(m_fftwPlan);
+    fftw_free(m_samples);
+    fftw_free(m_spectrum);
+}
+
+void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
+{
+    for (int i = 0; i < frame_count; i++) {
+        m_samples[m_writePos] = input_buffer[0][i];
+        m_writePos += 1;
+        if (m_writePos == m_bufferSize) {
+            fftw_execute(m_fftwPlan);
+
+            for (int j = 0; j < m_spectrumSize; j++) {
+                float real = m_spectrum[j][0];
+                float imag = m_spectrum[j][1];
+                float magnitude = std::hypot(real, imag);
+                m_buffer[j] = magnitude;
+            }
+
+            m_writePos = 0;
+        }
+    }
+}
+
+
 int main(int argc, char** argv)
 {
     auto window = setUpWindowAndOpenGL("Scope");
     MinimalOpenGLApp app(window);
 
-    VisualizerAudioCallback callback;
+    FFTAudioCallback callback(1024);
 
     PortAudioBackend audioBackend(&callback);
     audioBackend.run();
 
-    Scope scope(callback.getBufferSize());
+    Scope scope(callback.getSpectrumSize());
 
     while (!glfwWindowShouldClose(window)) {
         scope.render(callback.getBuffer());
