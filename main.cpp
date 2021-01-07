@@ -179,11 +179,9 @@ public:
         m_coordinatesLength = 4 * (m_numSegments + 1);
         m_coordinates = new GLfloat[m_coordinatesLength];
         for (int i = 0; i < m_numSegments + 1; i++) {
-            float i_normalized = i / m_numSegments;
-            float x = -1 + (float)2 * std::log2(i + 1) / std::log2(m_numSegments + 1);
-            m_coordinates[4 * i + 0] = x;
+            m_coordinates[4 * i + 0] = 0;
             m_coordinates[4 * i + 1] = -1;
-            m_coordinates[4 * i + 2] = x;
+            m_coordinates[4 * i + 2] = 0;
             m_coordinates[4 * i + 3] = 1;
         }
 
@@ -219,13 +217,25 @@ public:
         return m_numTriangles;
     }
 
-    void render(float* buffer) {
-        float thicknessInWindowCoordinates = m_thicknessInPixels / g_windowHeight;
-        for (int i = 0; i < m_numSegments + 1; i++) {
-            m_coordinates[4 * i + 1] = buffer[i] + thicknessInWindowCoordinates;
-            m_coordinates[4 * i + 3] = buffer[i] - thicknessInWindowCoordinates;
+    void setPlotX(std::vector<float>& plotX)
+    {
+        for (int i = 0; i < plotX.size(); i++) {
+            m_coordinates[4 * i + 0] = 2 * plotX[i] - 1;
+            m_coordinates[4 * i + 2] = 2 * plotX[i] - 1;
         }
+    }
 
+    void setPlotY(std::vector<float>& plotY)
+    {
+        float thicknessInWindowCoordinates = m_thicknessInPixels / g_windowHeight;
+        for (int i = 0; i < plotY.size(); i++) {
+            m_coordinates[4 * i + 1] = 2 * plotY[i] - 1 + thicknessInWindowCoordinates;
+            m_coordinates[4 * i + 3] = 2 * plotY[i] - 1 - thicknessInWindowCoordinates;
+        }
+    }
+
+    void render()
+    {
         glBufferData(GL_ARRAY_BUFFER, m_coordinatesLength * sizeof(GLfloat), m_coordinates, GL_STREAM_DRAW);
 
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -250,7 +260,7 @@ private:
     int m_coordinatesLength;
     GLuint* m_elements;
     int m_elementsLength;
-    float m_thicknessInPixels = 3;
+    float m_thicknessInPixels = 10;
 
     void makeVertexBuffer()
     {
@@ -317,7 +327,8 @@ void VisualizerAudioCallback::process(InputBuffer input_buffer, OutputBuffer out
 
 FFTAudioCallback::FFTAudioCallback(int bufferSize)
     : m_bufferSize(bufferSize),
-    m_spectrumSize(bufferSize / 2 + 1)
+    m_spectrumSize(bufferSize / 2 + 1),
+    m_numPlotPoints(m_spectrumSize)
 {
     m_writePos = 0;
 
@@ -330,10 +341,11 @@ FFTAudioCallback::FFTAudioCallback(int bufferSize)
         fftw_malloc(sizeof(fftw_complex) * m_spectrumSize)
     );
 
-    m_buffer = static_cast<float*>(malloc(sizeof(float) * m_spectrumSize));
-    for (int i = 0; i < m_spectrumSize; i++) {
-        m_buffer[i] = 0;
-    }
+    m_plotX.reserve(m_spectrumSize);
+    m_plotY.reserve(m_spectrumSize);
+    m_fftBinToPlotPoint.resize(m_spectrumSize);
+    m_fftBinToPlotPointMultiplier.resize(m_spectrumSize);
+    m_magnitudeSpectrum.resize(m_spectrumSize);
 
     m_fftwPlan = fftw_plan_dft_r2c_1d(m_bufferSize, m_samples, m_spectrum, FFTW_MEASURE);
 }
@@ -345,28 +357,64 @@ FFTAudioCallback::~FFTAudioCallback()
     fftw_free(m_spectrum);
 }
 
+float FFTAudioCallback::fftBinToNormalizedXPosition(int fftBin)
+{
+    return static_cast<float>(fftBin) / m_spectrumSize;
+}
+
+float FFTAudioCallback::fftBinToPixel(int fftBin, int scopeWidth)
+{
+    return fftBinToNormalizedXPosition(fftBin) * scopeWidth;
+}
+
+void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
+{
+    int chunk = 20;
+
+    m_numPlotPoints = windowWidth / chunk;
+    m_plotX.clear();
+    m_plotY.clear();
+    m_plotX.resize(m_numPlotPoints);
+    m_plotY.resize(m_numPlotPoints);
+
+    for (int i = 0; i < m_spectrumSize; i++) {
+        m_fftBinToPlotPointMultiplier[i] = 0;
+    }
+
+    for (int i = 0; i < m_spectrumSize; i++) {
+        float x = static_cast<float>(i) / m_spectrumSize;
+        int plotPoint = x * windowWidth / chunk;
+        m_fftBinToPlotPoint[i] = plotPoint;
+        m_fftBinToPlotPointMultiplier[i] += 1;
+        m_plotX[plotPoint] = x;
+    }
+
+    for (int i = 0; i < m_spectrumSize; i++) {
+        m_fftBinToPlotPointMultiplier[i] = 1 / m_fftBinToPlotPointMultiplier[i];
+    }
+}
+
 void FFTAudioCallback::doFFT()
 {
     fftw_execute(m_fftwPlan);
 
-    float maxDb = -30;
     for (int i = 0; i < m_spectrumSize; i++) {
         float real = m_spectrum[i][0];
         float imag = m_spectrum[i][1];
         float magnitude = std::hypot(real, imag);
         float db = 20 * std::log10(magnitude);
-        if (db > maxDb) {
-            maxDb = db;
-        }
-        m_buffer[i] = db;
-    }
-    for (int i = 0; i < m_spectrumSize; i++) {
-        float db = m_buffer[i];
-        float dbNormalized = (db + 60) / 60;
-        m_buffer[i] = 2 * dbNormalized - 1;
+        m_magnitudeSpectrum[i] = (db + 30) / 30;
     }
 
-    m_writePos = 0;
+    for (int i = 0; i < m_numPlotPoints; i++) {
+        m_plotY[i] = 0;
+    }
+
+    for (int i = 0; i < m_spectrumSize; i++) {
+        int plotPoint = m_fftBinToPlotPoint[i];
+        float multiplier = m_fftBinToPlotPointMultiplier[i];
+        m_plotY[plotPoint] += m_magnitudeSpectrum[i] * multiplier;
+    }
 }
 
 void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
@@ -376,6 +424,7 @@ void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buf
         m_writePos += 1;
         if (m_writePos == m_bufferSize) {
             doFFT();
+            m_writePos = 0;
         }
     }
 }
@@ -391,10 +440,13 @@ int main(int argc, char** argv)
     PortAudioBackend audioBackend(&callback);
     audioBackend.run();
 
-    Scope scope(callback.getSpectrumSize());
+    callback.setWindowSize(g_windowWidth, g_windowHeight);
+    Scope scope(callback.getNumPlotPoints());
+    scope.setPlotX(callback.getPlotX());
 
     while (!glfwWindowShouldClose(window)) {
-        scope.render(callback.getBuffer());
+        scope.setPlotY(callback.getPlotY());
+        scope.render();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
