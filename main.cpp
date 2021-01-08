@@ -369,7 +369,7 @@ float FFTAudioCallback::fftBinToPixel(int fftBin, int scopeWidth)
 
 void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
 {
-    int chunk = 20;
+    int chunk = 5;
 
     m_numPlotPoints = windowWidth / chunk;
     m_plotX.clear();
@@ -377,16 +377,31 @@ void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
     m_plotX.resize(m_numPlotPoints);
     m_plotY.resize(m_numPlotPoints);
 
+    m_fftBinToPlotPointMultiplier.clear();
+    m_fftBinToPlotPointMultiplier.resize(m_numPlotPoints);
+
     for (int i = 0; i < m_spectrumSize; i++) {
         m_fftBinToPlotPointMultiplier[i] = 0;
     }
 
+    for (int i = 0; i < m_numPlotPoints; i++) {
+        float freq = static_cast<float>(i) / m_numPlotPoints * 24000;
+        float logFreq = std::log2(freq);
+        float x = (logFreq - std::log2(60.0)) / (std::log2(20000.0) - std::log2(60.0));
+        m_plotX[i] = x;
+    }
+
     for (int i = 0; i < m_spectrumSize; i++) {
-        float x = static_cast<float>(i) / m_spectrumSize;
+        float freq = static_cast<float>(i) / m_spectrumSize * 24000;
+        float logFreq = std::log2(freq);
+        float x = (logFreq - std::log2(60.0)) / (std::log2(20000.0) - std::log2(60.0));
         int plotPoint = x * windowWidth / chunk;
-        m_fftBinToPlotPoint[i] = plotPoint;
-        m_fftBinToPlotPointMultiplier[i] += 1;
-        m_plotX[plotPoint] = x;
+        if (0 <= plotPoint && plotPoint < m_numPlotPoints) {
+            m_fftBinToPlotPoint[i] = plotPoint;
+            m_fftBinToPlotPointMultiplier[plotPoint] += 1;
+        } else {
+            m_fftBinToPlotPoint[i] = -1;
+        }
     }
 
     for (int i = 0; i < m_spectrumSize; i++) {
@@ -398,12 +413,24 @@ void FFTAudioCallback::doFFT()
 {
     fftw_execute(m_fftwPlan);
 
+    float maxDb;
     for (int i = 0; i < m_spectrumSize; i++) {
         float real = m_spectrum[i][0];
         float imag = m_spectrum[i][1];
         float magnitude = std::hypot(real, imag);
         float db = 20 * std::log10(magnitude);
-        m_magnitudeSpectrum[i] = (db + 30) / 30;
+        if (db > maxDb) {
+            maxDb = db;
+        }
+        m_magnitudeSpectrum[i] = db;
+    }
+
+    if (maxDb > m_maxDb) {
+        m_maxDb = maxDb;
+    }
+
+    for (int i = 0; i < m_spectrumSize; i++) {
+        m_magnitudeSpectrum[i] = (m_magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
     }
 
     for (int i = 0; i < m_numPlotPoints; i++) {
@@ -412,8 +439,10 @@ void FFTAudioCallback::doFFT()
 
     for (int i = 0; i < m_spectrumSize; i++) {
         int plotPoint = m_fftBinToPlotPoint[i];
-        float multiplier = m_fftBinToPlotPointMultiplier[i];
-        m_plotY[plotPoint] += m_magnitudeSpectrum[i] * multiplier;
+        if (plotPoint != -1) {
+            float multiplier = m_fftBinToPlotPointMultiplier[plotPoint];
+            m_plotY[plotPoint] += m_magnitudeSpectrum[i] * multiplier;
+        }
     }
 }
 

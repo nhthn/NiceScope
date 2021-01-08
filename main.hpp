@@ -41,6 +41,7 @@ private:
     const int m_spectrumSize;
     int m_numPlotPoints;
     int m_writePos;
+    float m_maxDb = -90.0f;
     double* m_samples;
     fftw_complex *m_spectrum;
     fftw_plan m_fftwPlan;
