@@ -343,9 +343,10 @@ FFTAudioCallback::FFTAudioCallback(int bufferSize)
 
     m_plotX.reserve(m_spectrumSize);
     m_plotY.reserve(m_spectrumSize);
-    m_fftBinToPlotPoint.resize(m_spectrumSize);
-    m_fftBinToPlotPointMultiplier.resize(m_spectrumSize);
     m_magnitudeSpectrum.resize(m_spectrumSize);
+
+    m_binsPerNominalChunk.reserve(m_spectrumSize);
+    m_binToChunk.reserve(m_spectrumSize);
 
     m_fftwPlan = fftw_plan_dft_r2c_1d(m_bufferSize, m_samples, m_spectrum, FFTW_MEASURE);
 }
@@ -357,55 +358,82 @@ FFTAudioCallback::~FFTAudioCallback()
     fftw_free(m_spectrum);
 }
 
-float FFTAudioCallback::fftBinToNormalizedXPosition(int fftBin)
+float FFTAudioCallback::fftBinToFrequency(int fftBin)
 {
-    return static_cast<float>(fftBin) / m_spectrumSize;
+    return 24000 * static_cast<float>(fftBin) / m_spectrumSize;
 }
 
-float FFTAudioCallback::fftBinToPixel(int fftBin, int scopeWidth)
+static float erbs(float frequency) {
+    return 21.4 * std::log10(0.00437f * frequency + 1);
+}
+
+float FFTAudioCallback::position(float frequency)
 {
-    return fftBinToNormalizedXPosition(fftBin) * scopeWidth;
+    return (erbs(frequency) - erbs(20)) / (erbs(20e3) - erbs(20));
 }
 
 void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
 {
-    int chunk = 5;
+    int chunkN = 2;
 
-    m_numPlotPoints = windowWidth / chunk;
     m_plotX.clear();
     m_plotY.clear();
-    m_plotX.resize(m_numPlotPoints);
-    m_plotY.resize(m_numPlotPoints);
 
-    m_fftBinToPlotPointMultiplier.clear();
-    m_fftBinToPlotPointMultiplier.resize(m_numPlotPoints);
+    m_binsPerNominalChunk.clear();
+    m_binsPerNominalChunk.resize(m_spectrumSize);
+    m_binToChunk.clear();
+    m_binToChunk.resize(m_spectrumSize);
 
-    for (int i = 0; i < m_spectrumSize; i++) {
-        m_fftBinToPlotPointMultiplier[i] = 0;
-    }
+    bool foundMultiChunk = false;
+    int firstMultiChunk;
+    int firstMultiChunkOffset;
+    float firstMultiChunkPosition;
+    int chunkIndex;
 
-    for (int i = 0; i < m_numPlotPoints; i++) {
-        float freq = static_cast<float>(i) / m_numPlotPoints * 24000;
-        float logFreq = std::log2(freq);
-        float x = (logFreq - std::log2(60.0)) / (std::log2(20000.0) - std::log2(60.0));
-        m_plotX[i] = x;
-    }
+    int lastNominalChunk = -1;
 
     for (int i = 0; i < m_spectrumSize; i++) {
-        float freq = static_cast<float>(i) / m_spectrumSize * 24000;
-        float logFreq = std::log2(freq);
-        float x = (logFreq - std::log2(60.0)) / (std::log2(20000.0) - std::log2(60.0));
-        int plotPoint = x * windowWidth / chunk;
-        if (0 <= plotPoint && plotPoint < m_numPlotPoints) {
-            m_fftBinToPlotPoint[i] = plotPoint;
-            m_fftBinToPlotPointMultiplier[plotPoint] += 1;
+        float frequency = fftBinToFrequency(i);
+        float thePosition = position(frequency);
+        if (thePosition > 1.0) {
+            m_binToChunk[i] = -1;
+            continue;
+        }
+        int nominalChunk = static_cast<int>(std::floor(thePosition * windowWidth / chunkN));
+        if (foundMultiChunk) {
+            chunkIndex = nominalChunk - firstMultiChunkOffset;
+            m_binToChunk[i] = chunkIndex;
         } else {
-            m_fftBinToPlotPoint[i] = -1;
+            chunkIndex = i;
+            m_binToChunk[i] = i;
+            if (nominalChunk == lastNominalChunk) {
+                foundMultiChunk = true;
+                firstMultiChunk = i;
+                firstMultiChunkOffset = nominalChunk;
+                firstMultiChunkPosition = thePosition;
+            }
+            lastNominalChunk = nominalChunk;
         }
     }
 
-    for (int i = 0; i < m_spectrumSize; i++) {
-        m_fftBinToPlotPointMultiplier[i] = 1 / m_fftBinToPlotPointMultiplier[i];
+    m_numPlotPoints = chunkIndex + 1;
+    m_plotX.resize(m_numPlotPoints);
+    m_plotY.resize(m_numPlotPoints);
+
+    for (int i = 0; i < firstMultiChunk; i++) {
+        m_plotX[i] = position(fftBinToFrequency(i));
+    }
+
+    for (int i = firstMultiChunk; i < m_numPlotPoints; i++) {
+        for (int j = 0; j < m_spectrumSize; j++) {
+            float thePosition = position(fftBinToFrequency(j));
+            int nominalChunk = static_cast<int>(std::floor(thePosition * windowWidth / chunkN));
+            int chunkIndex = nominalChunk - firstMultiChunkOffset;
+            if (chunkIndex == i) {
+                m_plotX[i] = thePosition;
+                break;
+            }
+        }
     }
 }
 
@@ -429,20 +457,19 @@ void FFTAudioCallback::doFFT()
         m_maxDb = maxDb;
     }
 
+    m_plotY.clear();
+    m_plotY.resize(m_numPlotPoints);
+
     for (int i = 0; i < m_spectrumSize; i++) {
         m_magnitudeSpectrum[i] = (m_magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
     }
 
-    for (int i = 0; i < m_numPlotPoints; i++) {
-        m_plotY[i] = 0;
-    }
-
     for (int i = 0; i < m_spectrumSize; i++) {
-        int plotPoint = m_fftBinToPlotPoint[i];
-        if (plotPoint != -1) {
-            float multiplier = m_fftBinToPlotPointMultiplier[plotPoint];
-            m_plotY[plotPoint] += m_magnitudeSpectrum[i] * multiplier;
+        int chunk = m_binToChunk[i];
+        if (chunk < 0) {
+            break;
         }
+        m_plotY[chunk] = std::max(m_plotY[chunk], m_magnitudeSpectrum[i]);
     }
 }
 

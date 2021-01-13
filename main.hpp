@@ -29,8 +29,9 @@ public:
     void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) override;
     int getBufferSize() { return m_bufferSize; }
     int getSpectrumSize() { return m_spectrumSize; }
-    float fftBinToNormalizedXPosition(int fftBin);
-    float fftBinToPixel(int fftBin, int scopeWidth);
+
+    float fftBinToFrequency(int fftBin);
+    float position(float frequency);
 
     void setWindowSize(int windowWidth, int windowHeight);
     std::vector<float>& getPlotX() { return m_plotX; };
@@ -48,7 +49,8 @@ private:
     std::vector<float> m_magnitudeSpectrum;
     std::vector<float> m_plotX;
     std::vector<float> m_plotY;
-    std::vector<int> m_fftBinToPlotPoint;
-    std::vector<float> m_fftBinToPlotPointMultiplier;
+
+    std::vector<int> m_binsPerNominalChunk;
+    std::vector<int> m_binToChunk;
     void doFFT();
 };
