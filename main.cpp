@@ -126,27 +126,29 @@ void ShaderProgram::cleanUp()
     glDeleteShader(m_fragmentShader);
 }
 
-Scope::Scope(int numPoints)
+const char* k_vertexShaderSource = ("#version 130\n"
+                                  "in vec2 pos;\n"
+                                  "void main()\n"
+                                  "{\n"
+                                  "    gl_Position = vec4(pos, 1, 1);\n"
+                                  "}\n");
+
+const char* k_fragmentShaderSource = (
+    "#version 130\n"
+    "uniform vec2 windowSize;\n"
+    "uniform vec4 color;\n"
+    "out vec4 fragColor;\n"
+    "void main()\n"
+    "{\n"
+    "fragColor = color;\n"
+    "}\n"
+);
+
+Scope::Scope(int numPoints, std::array<float, 4> color)
+    : m_shaderProgram(k_vertexShaderSource, k_fragmentShaderSource),
+    m_color(color)
 {
-    const char* vertexShaderSource = ("#version 130\n"
-                                      "in vec2 pos;\n"
-                                      "void main()\n"
-                                      "{\n"
-                                      "    gl_Position = vec4(pos, 1, 1);\n"
-                                      "}\n");
-
-    const char* fragmentShaderSource = (
-        "#version 130\n"
-        "uniform vec2 windowSize;\n"
-        "out vec3 fragColor;\n"
-        "void main()\n"
-        "{\n"
-        "fragColor = vec3(1.0);\n"
-        "}\n"
-    );
-
-    ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource);
-    m_program = shaderProgram.getProgram();
+    m_program = m_shaderProgram.getProgram();
 
     m_numSegments = numPoints - 1;
 
@@ -205,8 +207,11 @@ void Scope::render()
 
     glUseProgram(m_program);
 
-    GLuint color = glGetUniformLocation(m_program, "windowSize");
-    glUniform2f(color, g_windowWidth, g_windowHeight);
+    GLuint windowSize = glGetUniformLocation(m_program, "windowSize");
+    glUniform2f(windowSize, g_windowWidth, g_windowHeight);
+
+    GLuint color = glGetUniformLocation(m_program, "color");
+    glUniform4f(color, m_color[0], m_color[1], m_color[2], m_color[3]);
 
     glDrawElements(GL_TRIANGLES, 3 * m_numTriangles, GL_UNSIGNED_INT, (void*)0);
 }
@@ -310,28 +315,29 @@ FFTAudioCallback::~FFTAudioCallback()
 
 void FFTAudioCallback::doFFT()
 {
-    const std::lock_guard<std::mutex> lock(g_magnitudeSpectrumMutex);
-
     fftw_execute(m_fftwPlan);
 
-    float maxDb;
-    for (int i = 0; i < m_spectrumSize; i++) {
-        float real = m_complexSpectrum[i][0];
-        float imag = m_complexSpectrum[i][1];
-        float magnitude = std::hypot(real, imag);
-        float db = 20 * std::log10(magnitude);
-        if (db > maxDb) {
-            maxDb = db;
+    {
+        const std::lock_guard<std::mutex> lock(g_magnitudeSpectrumMutex);
+        float maxDb;
+        for (int i = 0; i < m_spectrumSize; i++) {
+            float real = m_complexSpectrum[i][0];
+            float imag = m_complexSpectrum[i][1];
+            float magnitude = std::hypot(real, imag);
+            float db = 20 * std::log10(magnitude);
+            if (db > maxDb) {
+                maxDb = db;
+            }
+            m_magnitudeSpectrum[i] = db;
         }
-        m_magnitudeSpectrum[i] = db;
-    }
 
-    if (maxDb > m_maxDb) {
-        m_maxDb = maxDb;
-    }
+        if (maxDb > m_maxDb) {
+            m_maxDb = maxDb;
+        }
 
-    for (int i = 0; i < m_spectrumSize; i++) {
-        m_magnitudeSpectrum[i] = (m_magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
+        for (int i = 0; i < m_spectrumSize; i++) {
+            m_magnitudeSpectrum[i] = (m_magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
+        }
     }
 }
 
@@ -416,7 +422,6 @@ void Spectrum::setWindowSize(int windowWidth, int windowHeight)
             // FIXME may be an off-by-one error in here for the first multichunk
             m_chunkX.push_back(thePosition);
             if (nominalChunk == lastNominalChunk) {
-                std::cout << "Found multichunk, bin " << i << std::endl;
                 foundMultiChunk = true;
                 firstMultiChunk = i;
                 firstMultiChunkOffset = nominalChunk;
@@ -453,18 +458,19 @@ void Spectrum::setWindowSize(int windowWidth, int windowHeight)
 
 void Spectrum::update(std::vector<float>& magnitudeSpectrum)
 {
-    const std::lock_guard<std::mutex> lock(g_magnitudeSpectrumMutex);
-
     for (int i = 0; i < m_numChunks; i++) {
-        m_chunkY[i] -= m_descentRate / g_windowHeight;
+        m_chunkY[i] -= m_descentRate;
     }
 
-    for (int i = 0; i < m_spectrumSize; i++) {
-        int chunk = m_binToChunk[i];
-        if (chunk < 0 || chunk >= m_chunkY.size()) {
-            break;
+    {
+        const std::lock_guard<std::mutex> lock(g_magnitudeSpectrumMutex);
+        for (int i = 0; i < m_spectrumSize; i++) {
+            int chunk = m_binToChunk[i];
+            if (chunk < 0 || chunk >= m_chunkY.size()) {
+                break;
+            }
+            m_chunkY[chunk] = std::max(m_chunkY[chunk], magnitudeSpectrum[i]);
         }
-        m_chunkY[chunk] = std::max(m_chunkY[chunk], magnitudeSpectrum[i]);
     }
 
     for (int i = 0; i < m_numPlotPoints; i++) {
@@ -497,22 +503,28 @@ int main(int argc, char** argv)
 
     int fftSize = 1024;
 
-    Spectrum spectrum(fftSize, 50);
+    Spectrum spectrum(fftSize, 1e-2);
     spectrum.setWindowSize(g_windowWidth, g_windowHeight);
+    Scope scope(spectrum.getNumPlotPoints(), {{1.0, 1.0, 1.0, 1.0}});
+
+    Spectrum spectrum2(fftSize, 1e-3);
+    spectrum2.setWindowSize(g_windowWidth, g_windowHeight);
+    Scope scope2(spectrum2.getNumPlotPoints(), {{0.3, 0.3, 0.3, 1.0}});
 
     FFTAudioCallback callback(fftSize);
 
     PortAudioBackend audioBackend(&callback);
     audioBackend.run();
 
-    Scope scope(spectrum.getNumPlotPoints());
-
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        spectrum.update(callback.getMagnitudeSpectrum());
+        spectrum2.update(callback.getMagnitudeSpectrum());
+        scope2.plot(spectrum2.getPlotX(), spectrum2.getPlotY(), spectrum2.getPlotNormal());
+        scope2.render();
 
+        spectrum.update(callback.getMagnitudeSpectrum());
         scope.plot(spectrum.getPlotX(), spectrum.getPlotY(), spectrum.getPlotNormal());
         scope.render();
 

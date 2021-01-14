@@ -35,7 +35,7 @@ private:
 
 class Scope {
 public:
-    Scope(int numPoints);
+    Scope(int numPoints, std::array<float, 4> color);
     ~Scope();
 
     int getProgram() { return m_program; }
@@ -50,6 +50,8 @@ public:
     void render();
 
 private:
+    ShaderProgram m_shaderProgram;
+    std::array<float, 4> m_color;
     int m_numSegments = 64;
     int m_numTriangles;
     GLuint m_program;
