@@ -5,11 +5,11 @@ This is a WIP attempt to create a minimal, beautiful, and highly configurable sc
 Done:
 
 - "Chunking" of spectrum plot points when plot points are denser than pixels.
+- Logarithmic plot points.
 - Basic PortAudio + OpenGL app working. PortAudio implies compatibility with ALSA, JACK, and PulseAudio.
 
 Todo:
 
-- Logarithmic plot points.
 - Cubic interpolation on the CPU.
 - Investigate whether cubic interpolation in vertex shader is a good idea.
 - Constant-thickness spline.

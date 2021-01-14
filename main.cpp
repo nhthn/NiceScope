@@ -328,7 +328,7 @@ void VisualizerAudioCallback::process(InputBuffer input_buffer, OutputBuffer out
 FFTAudioCallback::FFTAudioCallback(int bufferSize)
     : m_bufferSize(bufferSize),
     m_spectrumSize(bufferSize / 2 + 1),
-    m_numPlotPoints(m_spectrumSize)
+    m_numChunks(m_spectrumSize)
 {
     m_writePos = 0;
 
@@ -341,11 +341,10 @@ FFTAudioCallback::FFTAudioCallback(int bufferSize)
         fftw_malloc(sizeof(fftw_complex) * m_spectrumSize)
     );
 
-    m_plotX.reserve(m_spectrumSize);
-    m_plotY.reserve(m_spectrumSize);
+    m_chunkX.reserve(m_spectrumSize);
+    m_chunkY.reserve(m_spectrumSize);
     m_magnitudeSpectrum.resize(m_spectrumSize);
 
-    m_binsPerNominalChunk.reserve(m_spectrumSize);
     m_binToChunk.reserve(m_spectrumSize);
 
     m_fftwPlan = fftw_plan_dft_r2c_1d(m_bufferSize, m_samples, m_spectrum, FFTW_MEASURE);
@@ -376,8 +375,7 @@ void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
 {
     int chunkN = 5;
 
-    m_plotX.clear();
-    m_plotY.clear();
+    m_chunkX.clear();
 
     m_binsPerNominalChunk.clear();
     m_binsPerNominalChunk.resize(m_spectrumSize);
@@ -404,13 +402,13 @@ void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
             chunkIndex = firstMultiChunk + nominalChunk - firstMultiChunkOffset;
             m_binToChunk[i] = chunkIndex;
             if (nominalChunk != lastNominalChunk) {
-                m_plotX.push_back(thePosition);
+                m_chunkX.push_back(thePosition);
             }
         } else {
             chunkIndex = i;
             m_binToChunk[i] = i;
             // FIXME may be an off-by-one error in here for the first multichunk
-            m_plotX.push_back(thePosition);
+            m_chunkX.push_back(thePosition);
             if (nominalChunk == lastNominalChunk) {
                 std::cout << "Found multichunk, bin " << i << std::endl;
                 foundMultiChunk = true;
@@ -422,9 +420,7 @@ void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
         lastNominalChunk = nominalChunk;
     }
 
-    m_numPlotPoints = m_plotX.size();
-    m_plotX.resize(m_numPlotPoints);
-    m_plotY.resize(m_numPlotPoints);
+    m_numChunks = m_chunkX.size();
 }
 
 void FFTAudioCallback::doFFT()
@@ -447,8 +443,8 @@ void FFTAudioCallback::doFFT()
         m_maxDb = maxDb;
     }
 
-    m_plotY.clear();
-    m_plotY.resize(m_numPlotPoints);
+    m_chunkY.clear();
+    m_chunkY.resize(m_numChunks);
 
     for (int i = 0; i < m_spectrumSize; i++) {
         m_magnitudeSpectrum[i] = (m_magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
@@ -459,7 +455,7 @@ void FFTAudioCallback::doFFT()
         if (chunk < 0) {
             break;
         }
-        m_plotY[chunk] = std::max(m_plotY[chunk], m_magnitudeSpectrum[i]);
+        m_chunkY[chunk] = std::max(m_chunkY[chunk], m_magnitudeSpectrum[i]);
     }
 }
 
