@@ -7,7 +7,7 @@ extern std::mutex g_magnitudeSpectrumMutex;
 
 class Spectrum {
 public:
-    Spectrum(int fftSize, float descentRate);
+    Spectrum(int fftSize, float attack, float release);
     int getFFTSize() { return m_fftSize; };
 
     void setWindowSize(int windowWidth, int windowHeight);
@@ -28,6 +28,7 @@ private:
     int m_numChunks;
     std::vector<float> m_chunkX;
     std::vector<float> m_chunkY;
+    std::vector<float> m_lastChunkY;
 
     const int m_cubicResolution = 5;
     std::vector<float> m_plotX;
@@ -35,5 +36,6 @@ private:
     std::vector<float> m_plotNormal;
     int m_numPlotPoints;
 
-    float m_descentRate;
+    float m_kAttack;
+    float m_kRelease;
 };

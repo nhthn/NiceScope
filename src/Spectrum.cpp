@@ -21,15 +21,18 @@ static float dCubicInterpolate(float t, float y0, float y1, float y2, float y3)
     ) * 0.5;
 }
 
-Spectrum::Spectrum(int fftSize, float descentRate)
+Spectrum::Spectrum(int fftSize, float attack, float release)
     : m_spectrumSize(fftSize / 2 + 1),
     m_fftSize(fftSize),
     m_numChunks(0),
-    m_numPlotPoints(0),
-    m_descentRate(descentRate)
+    m_numPlotPoints(0)
 {
+    m_kAttack = 1 - std::exp(-attack);
+    m_kRelease = 1 - std::exp(-release);
+
     m_chunkX.reserve(m_spectrumSize);
     m_chunkY.reserve(m_spectrumSize);
+    m_lastChunkY.reserve(m_spectrumSize);
 
     m_plotX.reserve(m_spectrumSize * m_cubicResolution);
     m_plotY.reserve(m_spectrumSize * m_cubicResolution);
@@ -126,7 +129,7 @@ void Spectrum::setWindowSize(int windowWidth, int windowHeight)
 void Spectrum::update(std::vector<float>& magnitudeSpectrum)
 {
     for (int i = 0; i < m_numChunks; i++) {
-        m_chunkY[i] -= m_descentRate;
+        m_chunkY[i] = -1;
     }
 
     {
@@ -140,15 +143,23 @@ void Spectrum::update(std::vector<float>& magnitudeSpectrum)
         }
     }
 
+    for (int i = 0; i < m_numChunks; i++) {
+        if (m_lastChunkY[i] > m_chunkY[i]) {
+            m_lastChunkY[i] = m_lastChunkY[i] * m_kRelease + m_chunkY[i] * (1 - m_kRelease);
+        } else {
+            m_lastChunkY[i] = m_lastChunkY[i] * m_kAttack + m_chunkY[i] * (1 - m_kAttack);
+        }
+    }
+
     for (int i = 0; i < m_numPlotPoints; i++) {
         int t1 = i / m_cubicResolution;
         int t0 = std::max(t1 - 1, 0);
         int t2 = std::min(t1 + 1, m_numChunks - 1);
         int t3 = std::min(t1 + 2, m_numChunks - 1);
-        float y0 = m_chunkY[t0];
-        float y1 = m_chunkY[t1];
-        float y2 = m_chunkY[t2];
-        float y3 = m_chunkY[t3];
+        float y0 = m_lastChunkY[t0];
+        float y1 = m_lastChunkY[t1];
+        float y2 = m_lastChunkY[t2];
+        float y3 = m_lastChunkY[t3];
         float t = static_cast<float>(i) / m_cubicResolution - t1;
         m_plotY[i] = cubicInterpolate(t, y0, y1, y2, y3);
         float x0 = m_chunkX[t0];

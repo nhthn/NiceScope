@@ -70,13 +70,13 @@ int main(int argc, char** argv)
 
     int fftSize = 2048;
 
-    Spectrum spectrum(fftSize, 1e-2);
+    Spectrum spectrum(fftSize, 0.1, 3);
     spectrum.setWindowSize(g_windowWidth, g_windowHeight);
     Scope scope(spectrum.getNumPlotPoints(), colorFromHex(0xc5c8c6));
 
-    Spectrum spectrum2(fftSize, 1e-3);
+    Spectrum spectrum2(fftSize, 3, 6);
     spectrum2.setWindowSize(g_windowWidth, g_windowHeight);
-    Scope scope2(spectrum2.getNumPlotPoints(), colorFromHex(0x2c2d2b));
+    Scope scope2(spectrum2.getNumPlotPoints(), colorFromHex(0x3c3d3b));
 
     FFTAudioCallback callback(fftSize);
 
