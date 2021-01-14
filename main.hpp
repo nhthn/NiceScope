@@ -1,10 +1,6 @@
 #pragma once
 
-#include <cmath>
 #include <stdexcept>
-#include <fstream>
-#include <vector>
-#include <mutex>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
