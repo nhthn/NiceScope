@@ -18,13 +18,6 @@ void PortAudioBackend::run() {
         .suggestedLatency = 0.0,
         .hostApiSpecificStreamInfo = nullptr
     };
-    output_parameters = {
-        .device = device,
-        .channelCount = 2,
-        .sampleFormat = sample_format,
-        .suggestedLatency = 0.0,
-        .hostApiSpecificStreamInfo = nullptr
-    };
 
     PaStreamFlags stream_flags = paNoFlag;
     void* user_data = this;
@@ -33,7 +26,7 @@ void PortAudioBackend::run() {
         Pa_OpenStream(
             &m_stream,
             &input_parameters,
-            &output_parameters,
+            nullptr,
             m_sample_rate,
             m_block_size,
             stream_flags,
