@@ -5,6 +5,16 @@ const int k_maxMessageLength = 1024;
 volatile static int g_windowWidth = 640;
 volatile static int g_windowHeight = 480;
 
+static float cubicInterpolate(float t, float y0, float y1, float y2, float y3)
+{
+    return (
+        (-y0 + 3 * y1 - 3 * y2 + y3) * t * t * t
+        + (2 * y0 - 5 * y1 + 4 * y2 - y3) * t * t
+        + (-y0 + y2) * t
+        + 2 * y1
+    ) * 0.5;
+}
+
 GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle) {
     if (!glfwInit()) {
         throw std::runtime_error("GLFW initialization failed.");
@@ -377,7 +387,7 @@ float FFTAudioCallback::position(float frequency)
 
 void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
 {
-    int chunkN = 5;
+    int chunkN = 2;
 
     m_chunkX.clear();
 
@@ -423,13 +433,22 @@ void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
     }
 
     m_numChunks = m_chunkX.size();
-    m_numPlotPoints = m_numChunks;
+    m_numPlotPoints = m_numChunks * m_cubicResolution;
 
     m_plotX.clear();
     m_plotX.resize(m_numPlotPoints);
 
     for (int i = 0; i < m_numPlotPoints; i++) {
-        m_plotX[i] = m_chunkX[i];
+        int t1 = i / m_cubicResolution;
+        int t0 = std::max(t1 - 1, 0);
+        int t2 = std::min(t1 + 1, m_numChunks - 1);
+        int t3 = std::min(t1 + 2, m_numChunks - 1);
+        float x0 = m_chunkX[t0];
+        float x1 = m_chunkX[t1];
+        float x2 = m_chunkX[t2];
+        float x3 = m_chunkX[t3];
+        float t = static_cast<float>(i) / m_cubicResolution - t1;
+        m_plotX[i] = cubicInterpolate(t, x0, x1, x2, x3);
     }
 }
 
@@ -475,7 +494,16 @@ void FFTAudioCallback::doFFT()
     m_plotY.clear();
     m_plotY.resize(m_numPlotPoints);
     for (int i = 0; i < m_numPlotPoints; i++) {
-        m_plotY[i] = m_chunkY[i];
+        int t1 = i / m_cubicResolution;
+        int t0 = std::max(t1 - 1, 0);
+        int t2 = std::min(t1 + 1, m_numChunks - 1);
+        int t3 = std::min(t1 + 2, m_numChunks - 1);
+        float y0 = m_chunkY[t0];
+        float y1 = m_chunkY[t1];
+        float y2 = m_chunkY[t2];
+        float y3 = m_chunkY[t3];
+        float t = static_cast<float>(i) / m_cubicResolution - t1;
+        m_plotY[i] = cubicInterpolate(t, y0, y1, y2, y3);
     }
 }
 
