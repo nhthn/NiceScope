@@ -2,9 +2,6 @@
 
 const int k_maxMessageLength = 1024;
 
-volatile static int g_windowWidth = 640;
-volatile static int g_windowHeight = 480;
-
 static float cubicInterpolate(float t, float y0, float y1, float y2, float y3)
 {
     return (
@@ -22,6 +19,16 @@ static float dCubicInterpolate(float t, float y0, float y1, float y2, float y3)
         + 2 * (2 * y0 - 5 * y1 + 4 * y2 - y3) * t
         + (-y0 + y2)
     ) * 0.5;
+}
+
+volatile int g_windowWidth = 640;
+volatile int g_windowHeight = 480;
+
+static void resize(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, (GLsizei)width, (GLsizei)height);
+    g_windowWidth = width;
+    g_windowHeight = height;
 }
 
 GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle) {
@@ -44,279 +51,203 @@ GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle) {
     return window;
 }
 
-class MinimalOpenGLApp {
-public:
-    MinimalOpenGLApp(GLFWwindow* window)
-    {
-        m_window = window;
-        glfwSetFramebufferSizeCallback(m_window, resize);
+MinimalOpenGLApp::MinimalOpenGLApp(GLFWwindow* window)
+{
+    m_window = window;
+    glfwSetFramebufferSizeCallback(m_window, resize);
+}
+
+ShaderProgram::ShaderProgram(const char* vertexShaderSource, const char* fragmentShaderSource)
+    : m_vertexShaderSource(vertexShaderSource)
+    , m_fragmentShaderSource(fragmentShaderSource)
+{
+    makeVertexShader();
+    makeFragmentShader();
+    makeProgram();
+}
+
+ShaderProgram::~ShaderProgram()
+{
+    cleanUp();
+}
+
+void ShaderProgram::makeVertexShader()
+{
+    m_vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(m_vertexShader, 1, &m_vertexShaderSource, NULL);
+    glCompileShader(m_vertexShader);
+
+    GLint success;
+    glGetShaderiv(m_vertexShader, GL_COMPILE_STATUS, &success);
+    if (success != GL_TRUE) {
+        GLsizei logLength = 0;
+        GLchar c_message[k_maxMessageLength];
+        glGetShaderInfoLog(m_vertexShader, k_maxMessageLength, &logLength, c_message);
+        std::string message = c_message;
+        std::string full_message = "Error compiling vertex shader: " + message;
+        throw std::runtime_error(full_message);
+    }
+}
+
+void ShaderProgram::makeFragmentShader()
+{
+    m_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(m_fragmentShader, 1, &m_fragmentShaderSource, NULL);
+    glCompileShader(m_fragmentShader);
+
+    GLint success;
+    glGetShaderiv(m_fragmentShader, GL_COMPILE_STATUS, &success);
+    if (success != GL_TRUE) {
+        GLsizei logLength = 0;
+        GLchar c_message[k_maxMessageLength];
+        glGetShaderInfoLog(m_fragmentShader, k_maxMessageLength, &logLength, c_message);
+        std::string message = c_message;
+        std::string full_message = "Error compiling fragment shader: " + message;
+        throw std::runtime_error(full_message);
+    }
+}
+
+void ShaderProgram::makeProgram()
+{
+    m_program = glCreateProgram();
+    glAttachShader(m_program, m_vertexShader);
+    glAttachShader(m_program, m_fragmentShader);
+    glLinkProgram(m_program);
+}
+
+void ShaderProgram::cleanUp()
+{
+    glDetachShader(m_program, m_vertexShader);
+    glDetachShader(m_program, m_fragmentShader);
+    glDeleteProgram(m_program);
+    glDeleteShader(m_vertexShader);
+    glDeleteShader(m_fragmentShader);
+}
+
+Scope::Scope(int numPoints)
+{
+    const char* vertexShaderSource = ("#version 130\n"
+                                      "in vec2 pos;\n"
+                                      "void main()\n"
+                                      "{\n"
+                                      "    gl_Position = vec4(pos, 1, 1);\n"
+                                      "}\n");
+
+    const char* fragmentShaderSource = (
+        "#version 130\n"
+        "uniform vec2 windowSize;\n"
+        "out vec3 fragColor;\n"
+        "void main()\n"
+        "{\n"
+        "fragColor = vec3(1.0);\n"
+        "}\n"
+    );
+
+    ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource);
+    m_program = shaderProgram.getProgram();
+
+    m_numSegments = numPoints - 1;
+
+    // Each segment has two points, plus an additional two points at the end
+    // of the strip. Each point has two coordinates.
+    m_coordinatesLength = 4 * (m_numSegments + 1);
+    m_coordinates = new GLfloat[m_coordinatesLength];
+    for (int i = 0; i < m_numSegments + 1; i++) {
+        m_coordinates[4 * i + 0] = 0;
+        m_coordinates[4 * i + 1] = -1;
+        m_coordinates[4 * i + 2] = 0;
+        m_coordinates[4 * i + 3] = 1;
     }
 
-    void setProgram(GLuint program)
-    {
-        m_program = program;
+    m_numTriangles = 2 * m_numSegments;
+    m_elementsLength = 3 * m_numTriangles;
+    m_elements = new GLuint[m_elementsLength];
+    for (int i = 0; i < m_numSegments; i++) {
+        m_elements[6 * i + 0] = 2 * i + 0;
+        m_elements[6 * i + 1] = 2 * i + 1;
+        m_elements[6 * i + 2] = 2 * i + 2;
+        m_elements[6 * i + 3] = 2 * i + 1;
+        m_elements[6 * i + 4] = 2 * i + 2;
+        m_elements[6 * i + 5] = 2 * i + 3;
     }
 
-    void setNumTriangles(int numTriangles)
-    {
-        m_numTriangles = numTriangles;
+    makeVertexBuffer();
+    makeArrayBuffer();
+    makeElementBuffer();
+}
+
+Scope::~Scope()
+{
+    cleanUp();
+}
+
+void Scope::plot(
+    std::vector<float>& plotX,
+    std::vector<float>& plotY,
+    std::vector<float>& plotNormal
+)
+{
+    float thicknessInWindowCoordinates = m_thicknessInPixels / g_windowHeight;
+    for (int i = 0; i < plotY.size(); i++) {
+        float thicknessX = std::sin(plotNormal[i]) * thicknessInWindowCoordinates * 0.5;
+        float thicknessY = std::cos(plotNormal[i]) * thicknessInWindowCoordinates * 0.5;
+        m_coordinates[4 * i + 0] = 2 * plotX[i] - 1 - thicknessX;
+        m_coordinates[4 * i + 1] = 2 * plotY[i] - 1 - thicknessY;
+        m_coordinates[4 * i + 2] = 2 * plotX[i] - 1 + thicknessX;
+        m_coordinates[4 * i + 3] = 2 * plotY[i] - 1 + thicknessY;
     }
+}
 
-private:
-    const char* m_windowTitle;
-    int m_numTriangles;
-    GLFWwindow* m_window;
-    GLuint m_program;
+void Scope::render()
+{
+    glBufferData(GL_ARRAY_BUFFER, m_coordinatesLength * sizeof(GLfloat), m_coordinates, GL_STREAM_DRAW);
 
-    void render()
-    {
-    }
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
 
-    static void resize(GLFWwindow* window, int width, int height)
-    {
-        glViewport(0, 0, (GLsizei)width, (GLsizei)height);
-        g_windowWidth = width;
-        g_windowHeight = height;
-    }
-};
+    glUseProgram(m_program);
 
-class ShaderProgram {
-public:
-    ShaderProgram(const char* vertexShaderSource, const char* fragmentShaderSource)
-        : m_vertexShaderSource(vertexShaderSource)
-        , m_fragmentShaderSource(fragmentShaderSource)
-    {
-        makeVertexShader();
-        makeFragmentShader();
-        makeProgram();
-    }
+    GLuint color = glGetUniformLocation(m_program, "windowSize");
+    glUniform2f(color, g_windowWidth, g_windowHeight);
 
-    ~ShaderProgram()
-    {
-        cleanUp();
-    }
+    glDrawElements(GL_TRIANGLES, 3 * m_numTriangles, GL_UNSIGNED_INT, (void*)0);
+}
 
-    GLuint getProgram()
-    {
-        return m_program;
-    }
+void Scope::makeVertexBuffer()
+{
+    glGenBuffers(1, &m_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+}
 
-    GLuint getAttribLocation(const char* key)
-    {
-        return glGetAttribLocation(m_program, key);
-    }
+void Scope::makeArrayBuffer()
+{
+    glGenVertexArrays(1, &m_vao);
+    glBindVertexArray(m_vao);
+    glVertexAttribPointer(glGetAttribLocation(m_program, "pos"), 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+}
 
-private:
-    const char* m_vertexShaderSource;
-    const char* m_fragmentShaderSource;
-    GLuint m_vertexShader;
-    GLuint m_fragmentShader;
-    GLuint m_program;
+void Scope::makeElementBuffer()
+{
+    glGenBuffers(1, &m_ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_elementsLength * sizeof(GLuint), m_elements, GL_STATIC_DRAW);
+}
 
-    void makeVertexShader()
-    {
-        m_vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(m_vertexShader, 1, &m_vertexShaderSource, NULL);
-        glCompileShader(m_vertexShader);
+void Scope::cleanUp()
+{
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(0);
 
-        GLint success;
-        glGetShaderiv(m_vertexShader, GL_COMPILE_STATUS, &success);
-        if (success != GL_TRUE) {
-            GLsizei logLength = 0;
-            GLchar c_message[k_maxMessageLength];
-            glGetShaderInfoLog(m_vertexShader, k_maxMessageLength, &logLength, c_message);
-            std::string message = c_message;
-            std::string full_message = "Error compiling vertex shader: " + message;
-            throw std::runtime_error(full_message);
-        }
-    }
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glDeleteBuffers(1, &m_ebo);
 
-    void makeFragmentShader()
-    {
-        m_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(m_fragmentShader, 1, &m_fragmentShaderSource, NULL);
-        glCompileShader(m_fragmentShader);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDeleteBuffers(1, &m_vbo);
 
-        GLint success;
-        glGetShaderiv(m_fragmentShader, GL_COMPILE_STATUS, &success);
-        if (success != GL_TRUE) {
-            GLsizei logLength = 0;
-            GLchar c_message[k_maxMessageLength];
-            glGetShaderInfoLog(m_fragmentShader, k_maxMessageLength, &logLength, c_message);
-            std::string message = c_message;
-            std::string full_message = "Error compiling fragment shader: " + message;
-            throw std::runtime_error(full_message);
-        }
-    }
-
-    void makeProgram()
-    {
-        m_program = glCreateProgram();
-        glAttachShader(m_program, m_vertexShader);
-        glAttachShader(m_program, m_fragmentShader);
-        glLinkProgram(m_program);
-    }
-
-    void cleanUp()
-    {
-        glDetachShader(m_program, m_vertexShader);
-        glDetachShader(m_program, m_fragmentShader);
-        glDeleteProgram(m_program);
-        glDeleteShader(m_vertexShader);
-        glDeleteShader(m_fragmentShader);
-    }
-};
-
-class Scope {
-public:
-    Scope(int numPoints)
-    {
-        const char* vertexShaderSource = ("#version 130\n"
-                                          "in vec2 pos;\n"
-                                          "void main()\n"
-                                          "{\n"
-                                          "    gl_Position = vec4(pos, 1, 1);\n"
-                                          "}\n");
-
-        const char* fragmentShaderSource = (
-            "#version 130\n"
-            "uniform vec2 windowSize;\n"
-            "out vec3 fragColor;\n"
-            "void main()\n"
-            "{\n"
-            "fragColor = vec3(1.0);\n"
-            "}\n"
-        );
-
-        ShaderProgram shaderProgram(vertexShaderSource, fragmentShaderSource);
-        m_program = shaderProgram.getProgram();
-
-        m_numSegments = numPoints - 1;
-
-        // Each segment has two points, plus an additional two points at the end
-        // of the strip. Each point has two coordinates.
-        m_coordinatesLength = 4 * (m_numSegments + 1);
-        m_coordinates = new GLfloat[m_coordinatesLength];
-        for (int i = 0; i < m_numSegments + 1; i++) {
-            m_coordinates[4 * i + 0] = 0;
-            m_coordinates[4 * i + 1] = -1;
-            m_coordinates[4 * i + 2] = 0;
-            m_coordinates[4 * i + 3] = 1;
-        }
-
-        m_numTriangles = 2 * m_numSegments;
-        m_elementsLength = 3 * m_numTriangles;
-        m_elements = new GLuint[m_elementsLength];
-        for (int i = 0; i < m_numSegments; i++) {
-            m_elements[6 * i + 0] = 2 * i + 0;
-            m_elements[6 * i + 1] = 2 * i + 1;
-            m_elements[6 * i + 2] = 2 * i + 2;
-            m_elements[6 * i + 3] = 2 * i + 1;
-            m_elements[6 * i + 4] = 2 * i + 2;
-            m_elements[6 * i + 5] = 2 * i + 3;
-        }
-
-        makeVertexBuffer();
-        makeArrayBuffer();
-        makeElementBuffer();
-    }
-
-    ~Scope()
-    {
-        cleanUp();
-    }
-
-    int getProgram()
-    {
-        return m_program;
-    }
-
-    int getNumTriangles()
-    {
-        return m_numTriangles;
-    }
-
-    void plot(
-        std::vector<float>& plotX,
-        std::vector<float>& plotY,
-        std::vector<float>& plotNormal
-    )
-    {
-        float thicknessInWindowCoordinates = m_thicknessInPixels / g_windowHeight;
-        for (int i = 0; i < plotY.size(); i++) {
-            float thicknessX = std::sin(plotNormal[i]) * thicknessInWindowCoordinates * 0.5;
-            float thicknessY = std::cos(plotNormal[i]) * thicknessInWindowCoordinates * 0.5;
-            m_coordinates[4 * i + 0] = 2 * plotX[i] - 1 - thicknessX;
-            m_coordinates[4 * i + 1] = 2 * plotY[i] - 1 - thicknessY;
-            m_coordinates[4 * i + 2] = 2 * plotX[i] - 1 + thicknessX;
-            m_coordinates[4 * i + 3] = 2 * plotY[i] - 1 + thicknessY;
-        }
-    }
-
-    void render()
-    {
-        glBufferData(GL_ARRAY_BUFFER, m_coordinatesLength * sizeof(GLfloat), m_coordinates, GL_STREAM_DRAW);
-
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glUseProgram(m_program);
-
-        GLuint color = glGetUniformLocation(m_program, "windowSize");
-        glUniform2f(color, g_windowWidth, g_windowHeight);
-
-        glDrawElements(GL_TRIANGLES, 3 * m_numTriangles, GL_UNSIGNED_INT, (void*)0);
-    }
-
-private:
-    int m_numSegments = 64;
-    int m_numTriangles;
-    GLuint m_program;
-    GLuint m_vao;
-    GLuint m_vbo;
-    GLuint m_ebo;
-    GLfloat* m_coordinates;
-    int m_coordinatesLength;
-    GLuint* m_elements;
-    int m_elementsLength;
-    float m_thicknessInPixels = 3;
-
-    void makeVertexBuffer()
-    {
-        glGenBuffers(1, &m_vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    }
-
-    void makeArrayBuffer()
-    {
-        glGenVertexArrays(1, &m_vao);
-        glBindVertexArray(m_vao);
-        glVertexAttribPointer(glGetAttribLocation(m_program, "pos"), 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-    }
-
-    void makeElementBuffer()
-    {
-        glGenBuffers(1, &m_ebo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_elementsLength * sizeof(GLuint), m_elements, GL_STATIC_DRAW);
-    }
-
-    void cleanUp()
-    {
-        glDisableVertexAttribArray(1);
-        glDisableVertexAttribArray(0);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glDeleteBuffers(1, &m_ebo);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glDeleteBuffers(1, &m_vbo);
-
-        glBindVertexArray(0);
-        glDeleteVertexArrays(1, &m_vao);
-    }
-};
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &m_vao);
+}
 
 VisualizerAudioCallback::VisualizerAudioCallback(int bufferSize)
     : m_bufferSize(bufferSize)
@@ -397,7 +328,7 @@ float FFTAudioCallback::position(float frequency)
 
 void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
 {
-    int chunkN = 2;
+    int chunkN = 5;
 
     m_chunkX.clear();
 
