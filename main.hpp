@@ -72,20 +72,16 @@ public:
     Spectrum(int fftSize, float descentRate);
     int getFFTSize() { return m_fftSize; };
 
-    std::vector<float>& getMagnitudeSpectrum() { return m_magnitudeSpectrum; }
-
     void setWindowSize(int windowWidth, int windowHeight);
     std::vector<float>& getPlotX() { return m_plotX; };
     std::vector<float>& getPlotY() { return m_plotY; };
     std::vector<float>& getPlotNormal() { return m_plotNormal; };
     int getNumPlotPoints() { return m_numPlotPoints; }
 
-    void update();
+    void update(std::vector<float>& magnitudeSpectrum);
 
     float fftBinToFrequency(int fftBin);
     float position(float frequency);
-
-    std::vector<float> m_magnitudeSpectrum;
 private:
     const int m_fftSize;
     const int m_spectrumSize;
@@ -133,14 +129,15 @@ private:
 
 class FFTAudioCallback : public AudioCallback {
 public:
-    FFTAudioCallback(Spectrum& spectrum);
+    FFTAudioCallback(int fftSize);
     ~FFTAudioCallback();
     void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) override;
     int getBufferSize() { return m_bufferSize; }
     int getSpectrumSize() { return m_spectrumSize; }
 
+    std::vector<float>& getMagnitudeSpectrum() { return m_magnitudeSpectrum; }
+
 private:
-    Spectrum& m_spectrum;
     const int m_bufferSize;
     const int m_spectrumSize;
     int m_writePos;
@@ -150,4 +147,5 @@ private:
     fftw_plan m_fftwPlan;
     void doFFT();
     std::vector<float> m_window;
+    std::vector<float> m_magnitudeSpectrum;
 };
