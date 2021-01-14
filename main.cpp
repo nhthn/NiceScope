@@ -1,5 +1,7 @@
 #include "main.hpp"
 
+static std::mutex g_magnitudeSpectrumMutex;
+
 const int k_maxMessageLength = 1024;
 
 static float cubicInterpolate(float t, float y0, float y1, float y2, float y3)
@@ -308,6 +310,8 @@ FFTAudioCallback::~FFTAudioCallback()
 
 void FFTAudioCallback::doFFT()
 {
+    const std::lock_guard<std::mutex> lock(g_magnitudeSpectrumMutex);
+
     fftw_execute(m_fftwPlan);
 
     float maxDb;
@@ -449,6 +453,8 @@ void Spectrum::setWindowSize(int windowWidth, int windowHeight)
 
 void Spectrum::update(std::vector<float>& magnitudeSpectrum)
 {
+    const std::lock_guard<std::mutex> lock(g_magnitudeSpectrumMutex);
+
     for (int i = 0; i < m_numChunks; i++) {
         m_chunkY[i] -= m_descentRate / g_windowHeight;
     }
