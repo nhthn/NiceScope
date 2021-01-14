@@ -59,7 +59,7 @@ private:
     int m_coordinatesLength;
     GLuint* m_elements;
     int m_elementsLength;
-    float m_thicknessInPixels = 3;
+    float m_thicknessInPixels = 10;
 
     void makeVertexBuffer();
     void makeArrayBuffer();

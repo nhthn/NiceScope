@@ -187,14 +187,13 @@ void Scope::plot(
     std::vector<float>& plotNormal
 )
 {
-    float thicknessInWindowCoordinates = m_thicknessInPixels / g_windowHeight;
     for (int i = 0; i < plotY.size(); i++) {
-        float thicknessX = std::sin(plotNormal[i]) * thicknessInWindowCoordinates * 0.5;
-        float thicknessY = std::cos(plotNormal[i]) * thicknessInWindowCoordinates * 0.5;
+        float thicknessX = std::sin(plotNormal[i]) * m_thicknessInPixels / g_windowWidth * 0.5;
+        float thicknessY = std::cos(plotNormal[i]) * m_thicknessInPixels / g_windowHeight * 0.5;
         m_coordinates[4 * i + 0] = 2 * plotX[i] - 1 - thicknessX;
-        m_coordinates[4 * i + 1] = 2 * plotY[i] - 1 - thicknessY;
+        m_coordinates[4 * i + 1] = 2 * plotY[i] - 1 + thicknessY;
         m_coordinates[4 * i + 2] = 2 * plotX[i] - 1 + thicknessX;
-        m_coordinates[4 * i + 3] = 2 * plotY[i] - 1 + thicknessY;
+        m_coordinates[4 * i + 3] = 2 * plotY[i] - 1 - thicknessY;
     }
 }
 
