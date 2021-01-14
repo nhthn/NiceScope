@@ -67,6 +67,41 @@ private:
     void cleanUp();
 };
 
+class Spectrum {
+public:
+    Spectrum(int fftSize);
+    int getFFTSize() { return m_fftSize; };
+
+    std::vector<float>& getMagnitudeSpectrum() { return m_magnitudeSpectrum; }
+
+    void setWindowSize(int windowWidth, int windowHeight);
+    std::vector<float>& getPlotX() { return m_plotX; };
+    std::vector<float>& getPlotY() { return m_plotY; };
+    std::vector<float>& getPlotNormal() { return m_plotNormal; };
+    int getNumPlotPoints() { return m_numPlotPoints; }
+
+    void update();
+
+    float fftBinToFrequency(int fftBin);
+    float position(float frequency);
+
+    std::vector<float> m_magnitudeSpectrum;
+private:
+    const int m_fftSize;
+    const int m_spectrumSize;
+
+    std::vector<int> m_binToChunk;
+    int m_numChunks;
+    std::vector<float> m_chunkX;
+    std::vector<float> m_chunkY;
+
+    const int m_cubicResolution = 5;
+    std::vector<float> m_plotX;
+    std::vector<float> m_plotY;
+    std::vector<float> m_plotNormal;
+    int m_numPlotPoints;
+};
+
 class MinimalOpenGLApp {
 public:
     MinimalOpenGLApp(GLFWwindow* window);
@@ -96,41 +131,20 @@ private:
 
 class FFTAudioCallback : public AudioCallback {
 public:
-    FFTAudioCallback(int bufferSize);
+    FFTAudioCallback(Spectrum& spectrum);
     ~FFTAudioCallback();
     void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) override;
     int getBufferSize() { return m_bufferSize; }
     int getSpectrumSize() { return m_spectrumSize; }
 
-    float fftBinToFrequency(int fftBin);
-    float position(float frequency);
-
-    void setWindowSize(int windowWidth, int windowHeight);
-    std::vector<float>& getPlotX() { return m_plotX; };
-    std::vector<float>& getPlotY() { return m_plotY; };
-    std::vector<float>& getPlotNormal() { return m_plotNormal; };
-    int getNumPlotPoints() { return m_numPlotPoints; }
-
 private:
+    Spectrum& m_spectrum;
     const int m_bufferSize;
     const int m_spectrumSize;
-    int m_numChunks;
     int m_writePos;
     float m_maxDb = -90.0f;
     double* m_samples;
-    fftw_complex *m_spectrum;
+    fftw_complex *m_complexSpectrum;
     fftw_plan m_fftwPlan;
-    std::vector<float> m_magnitudeSpectrum;
-
-    std::vector<float> m_chunkX;
-    std::vector<float> m_chunkY;
-
-    const int m_cubicResolution = 5;
-    std::vector<float> m_plotX;
-    std::vector<float> m_plotY;
-    std::vector<float> m_plotNormal;
-    int m_numPlotPoints;
-
-    std::vector<int> m_binToChunk;
     void doFFT();
 };

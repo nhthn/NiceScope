@@ -274,11 +274,10 @@ void VisualizerAudioCallback::process(InputBuffer input_buffer, OutputBuffer out
     }
 }
 
-FFTAudioCallback::FFTAudioCallback(int bufferSize)
-    : m_bufferSize(bufferSize),
-    m_spectrumSize(bufferSize / 2 + 1),
-    m_numChunks(0),
-    m_numPlotPoints(0)
+FFTAudioCallback::FFTAudioCallback(Spectrum& spectrum)
+    : m_spectrum(spectrum),
+    m_bufferSize(spectrum.getFFTSize()),
+    m_spectrumSize(m_bufferSize / 2 + 1)
 {
     m_writePos = 0;
 
@@ -287,10 +286,68 @@ FFTAudioCallback::FFTAudioCallback(int bufferSize)
         m_samples[i] = 0;
     }
 
-    m_spectrum = static_cast<fftw_complex*>(
+    m_complexSpectrum = static_cast<fftw_complex*>(
         fftw_malloc(sizeof(fftw_complex) * m_spectrumSize)
     );
 
+    m_fftwPlan = fftw_plan_dft_r2c_1d(
+        m_bufferSize, m_samples, m_complexSpectrum, FFTW_MEASURE
+    );
+}
+
+FFTAudioCallback::~FFTAudioCallback()
+{
+    fftw_destroy_plan(m_fftwPlan);
+    fftw_free(m_samples);
+    fftw_free(m_complexSpectrum);
+}
+
+void FFTAudioCallback::doFFT()
+{
+    fftw_execute(m_fftwPlan);
+
+    std::vector<float>& magnitudeSpectrum = m_spectrum.getMagnitudeSpectrum();
+
+    float maxDb;
+    for (int i = 0; i < m_spectrumSize; i++) {
+        float real = m_complexSpectrum[i][0];
+        float imag = m_complexSpectrum[i][1];
+        float magnitude = std::hypot(real, imag);
+        float db = 20 * std::log10(magnitude);
+        if (db > maxDb) {
+            maxDb = db;
+        }
+        magnitudeSpectrum[i] = db;
+    }
+
+    if (maxDb > m_maxDb) {
+        m_maxDb = maxDb;
+    }
+
+    for (int i = 0; i < m_spectrumSize; i++) {
+        magnitudeSpectrum[i] = (magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
+    }
+}
+
+void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
+{
+    for (int i = 0; i < frame_count; i++) {
+        m_samples[m_writePos] = input_buffer[0][i];
+        m_writePos += 1;
+        if (m_writePos == m_bufferSize) {
+            doFFT();
+            m_writePos = 0;
+        }
+    }
+}
+
+
+Spectrum::Spectrum(int fftSize)
+    : m_spectrumSize(fftSize / 2 + 1),
+    m_fftSize(fftSize),
+    m_numChunks(0),
+    m_numPlotPoints(0)
+{
     m_chunkX.reserve(m_spectrumSize);
     m_chunkY.reserve(m_spectrumSize);
     m_magnitudeSpectrum.resize(m_spectrumSize);
@@ -300,18 +357,9 @@ FFTAudioCallback::FFTAudioCallback(int bufferSize)
     m_plotNormal.reserve(m_spectrumSize * m_cubicResolution);
 
     m_binToChunk.reserve(m_spectrumSize);
-
-    m_fftwPlan = fftw_plan_dft_r2c_1d(m_bufferSize, m_samples, m_spectrum, FFTW_MEASURE);
 }
 
-FFTAudioCallback::~FFTAudioCallback()
-{
-    fftw_destroy_plan(m_fftwPlan);
-    fftw_free(m_samples);
-    fftw_free(m_spectrum);
-}
-
-float FFTAudioCallback::fftBinToFrequency(int fftBin)
+float Spectrum::fftBinToFrequency(int fftBin)
 {
     return 24000 * static_cast<float>(fftBin) / m_spectrumSize;
 }
@@ -320,12 +368,12 @@ static float erbs(float frequency) {
     return 21.4 * std::log10(0.00437f * frequency + 1);
 }
 
-float FFTAudioCallback::position(float frequency)
+float Spectrum::position(float frequency)
 {
     return (erbs(frequency) - erbs(20)) / (erbs(20e3) - erbs(20));
 }
 
-void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
+void Spectrum::setWindowSize(int windowWidth, int windowHeight)
 {
     int chunkN = 5;
 
@@ -395,36 +443,10 @@ void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
     m_plotNormal.resize(m_numPlotPoints);
 }
 
-void FFTAudioCallback::doFFT()
+void Spectrum::update()
 {
-    if (m_numPlotPoints == 0) {
-        return;
-    }
-
-    fftw_execute(m_fftwPlan);
-
-    float maxDb;
-    for (int i = 0; i < m_spectrumSize; i++) {
-        float real = m_spectrum[i][0];
-        float imag = m_spectrum[i][1];
-        float magnitude = std::hypot(real, imag);
-        float db = 20 * std::log10(magnitude);
-        if (db > maxDb) {
-            maxDb = db;
-        }
-        m_magnitudeSpectrum[i] = db;
-    }
-
-    if (maxDb > m_maxDb) {
-        m_maxDb = maxDb;
-    }
-
     m_chunkY.clear();
     m_chunkY.resize(m_numChunks);
-
-    for (int i = 0; i < m_spectrumSize; i++) {
-        m_magnitudeSpectrum[i] = (m_magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
-    }
 
     for (int i = 0; i < m_spectrumSize; i++) {
         int chunk = m_binToChunk[i];
@@ -458,34 +480,25 @@ void FFTAudioCallback::doFFT()
     }
 }
 
-void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
-{
-    for (int i = 0; i < frame_count; i++) {
-        m_samples[m_writePos] = input_buffer[0][i];
-        m_writePos += 1;
-        if (m_writePos == m_bufferSize) {
-            doFFT();
-            m_writePos = 0;
-        }
-    }
-}
-
 
 int main(int argc, char** argv)
 {
     auto window = setUpWindowAndOpenGL("Scope");
     MinimalOpenGLApp app(window);
 
-    FFTAudioCallback callback(1024);
+    int fftSize = 1024;
+    Spectrum spectrum(fftSize);
+    FFTAudioCallback callback(spectrum);
+    spectrum.setWindowSize(g_windowWidth, g_windowHeight);
 
     PortAudioBackend audioBackend(&callback);
     audioBackend.run();
 
-    callback.setWindowSize(g_windowWidth, g_windowHeight);
-    Scope scope(callback.getNumPlotPoints());
+    Scope scope(spectrum.getNumPlotPoints());
 
     while (!glfwWindowShouldClose(window)) {
-        scope.plot(callback.getPlotX(), callback.getPlotY(), callback.getPlotNormal());
+        spectrum.update();
+        scope.plot(spectrum.getPlotX(), spectrum.getPlotY(), spectrum.getPlotNormal());
         scope.render();
 
         glfwSwapBuffers(window);
