@@ -7,12 +7,14 @@ Done:
 - "Chunking" of spectrum plot points when plot points are denser than pixels.
 - Logarithmic plot points.
 - Basic PortAudio + OpenGL app working. PortAudio implies compatibility with ALSA, JACK, and PulseAudio.
+- Cubic interpolation on the CPU.
+- Constant-thickness spline.
 
 Todo:
 
-- Cubic interpolation on the CPU.
+- Hann window.
+- History.
 - Investigate whether cubic interpolation in vertex shader is a good idea.
-- Constant-thickness spline.
 
 Goals:
 
