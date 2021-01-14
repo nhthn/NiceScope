@@ -147,4 +147,5 @@ private:
     fftw_complex *m_complexSpectrum;
     fftw_plan m_fftwPlan;
     void doFFT();
+    std::vector<float> m_window;
 };

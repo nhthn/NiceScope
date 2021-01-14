@@ -286,6 +286,12 @@ FFTAudioCallback::FFTAudioCallback(Spectrum& spectrum)
         m_samples[i] = 0;
     }
 
+    m_window.resize(m_bufferSize);
+    for (int i = 0; i < m_bufferSize; i++) {
+        float t = static_cast<float>(i) / m_bufferSize;
+        m_window[i] = (std::cos(t * 2 * 3.14159265358979) + 1) * 0.5;
+    }
+
     m_complexSpectrum = static_cast<fftw_complex*>(
         fftw_malloc(sizeof(fftw_complex) * m_spectrumSize)
     );
@@ -332,7 +338,7 @@ void FFTAudioCallback::doFFT()
 void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
 {
     for (int i = 0; i < frame_count; i++) {
-        m_samples[m_writePos] = input_buffer[0][i];
+        m_samples[m_writePos] = input_buffer[0][i] * m_window[m_writePos];
         m_writePos += 1;
         if (m_writePos == m_bufferSize) {
             doFFT();
