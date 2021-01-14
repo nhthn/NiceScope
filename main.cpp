@@ -15,6 +15,15 @@ static float cubicInterpolate(float t, float y0, float y1, float y2, float y3)
     ) * 0.5;
 }
 
+static float dCubicInterpolate(float t, float y0, float y1, float y2, float y3)
+{
+    return (
+        3 * (-y0 + 3 * y1 - 3 * y2 + y3) * t * t
+        + 2 * (2 * y0 - 5 * y1 + 4 * y2 - y3) * t
+        + (-y0 + y2)
+    ) * 0.5;
+}
+
 GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle) {
     if (!glfwInit()) {
         throw std::runtime_error("GLFW initialization failed.");
@@ -227,20 +236,20 @@ public:
         return m_numTriangles;
     }
 
-    void setPlotX(std::vector<float>& plotX)
-    {
-        for (int i = 0; i < plotX.size(); i++) {
-            m_coordinates[4 * i + 0] = 2 * plotX[i] - 1;
-            m_coordinates[4 * i + 2] = 2 * plotX[i] - 1;
-        }
-    }
-
-    void setPlotY(std::vector<float>& plotY)
+    void plot(
+        std::vector<float>& plotX,
+        std::vector<float>& plotY,
+        std::vector<float>& plotNormal
+    )
     {
         float thicknessInWindowCoordinates = m_thicknessInPixels / g_windowHeight;
         for (int i = 0; i < plotY.size(); i++) {
-            m_coordinates[4 * i + 1] = 2 * plotY[i] - 1 + thicknessInWindowCoordinates;
-            m_coordinates[4 * i + 3] = 2 * plotY[i] - 1 - thicknessInWindowCoordinates;
+            float thicknessX = std::sin(plotNormal[i]) * thicknessInWindowCoordinates * 0.5;
+            float thicknessY = std::cos(plotNormal[i]) * thicknessInWindowCoordinates * 0.5;
+            m_coordinates[4 * i + 0] = 2 * plotX[i] - 1 - thicknessX;
+            m_coordinates[4 * i + 1] = 2 * plotY[i] - 1 - thicknessY;
+            m_coordinates[4 * i + 2] = 2 * plotX[i] - 1 + thicknessX;
+            m_coordinates[4 * i + 3] = 2 * plotY[i] - 1 + thicknessY;
         }
     }
 
@@ -270,7 +279,7 @@ private:
     int m_coordinatesLength;
     GLuint* m_elements;
     int m_elementsLength;
-    float m_thicknessInPixels = 10;
+    float m_thicknessInPixels = 3;
 
     void makeVertexBuffer()
     {
@@ -358,6 +367,7 @@ FFTAudioCallback::FFTAudioCallback(int bufferSize)
 
     m_plotX.reserve(m_spectrumSize * m_cubicResolution);
     m_plotY.reserve(m_spectrumSize * m_cubicResolution);
+    m_plotNormal.reserve(m_spectrumSize * m_cubicResolution);
 
     m_binToChunk.reserve(m_spectrumSize);
 
@@ -450,6 +460,9 @@ void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
         float t = static_cast<float>(i) / m_cubicResolution - t1;
         m_plotX[i] = cubicInterpolate(t, x0, x1, x2, x3);
     }
+
+    m_plotNormal.clear();
+    m_plotNormal.resize(m_numPlotPoints);
 }
 
 void FFTAudioCallback::doFFT()
@@ -504,6 +517,14 @@ void FFTAudioCallback::doFFT()
         float y3 = m_chunkY[t3];
         float t = static_cast<float>(i) / m_cubicResolution - t1;
         m_plotY[i] = cubicInterpolate(t, y0, y1, y2, y3);
+        float x0 = m_chunkX[t0];
+        float x1 = m_chunkX[t1];
+        float x2 = m_chunkX[t2];
+        float x3 = m_chunkX[t3];
+        m_plotNormal[i] = std::atan2(
+            dCubicInterpolate(t, y0, y1, y2, y3),
+            dCubicInterpolate(t, x0, x1, x2, x3)
+        );
     }
 }
 
@@ -532,10 +553,9 @@ int main(int argc, char** argv)
 
     callback.setWindowSize(g_windowWidth, g_windowHeight);
     Scope scope(callback.getNumPlotPoints());
-    scope.setPlotX(callback.getPlotX());
 
     while (!glfwWindowShouldClose(window)) {
-        scope.setPlotY(callback.getPlotY());
+        scope.plot(callback.getPlotX(), callback.getPlotY(), callback.getPlotNormal());
         scope.render();
 
         glfwSwapBuffers(window);
