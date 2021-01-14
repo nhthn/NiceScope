@@ -1,5 +1,7 @@
 #include "Spectrum.hpp"
 
+std::mutex g_magnitudeSpectrumMutex;
+
 static float cubicInterpolate(float t, float y0, float y1, float y2, float y3)
 {
     return (
