@@ -69,7 +69,7 @@ private:
 
 class Spectrum {
 public:
-    Spectrum(int fftSize);
+    Spectrum(int fftSize, float descentRate);
     int getFFTSize() { return m_fftSize; };
 
     std::vector<float>& getMagnitudeSpectrum() { return m_magnitudeSpectrum; }
@@ -100,6 +100,8 @@ private:
     std::vector<float> m_plotY;
     std::vector<float> m_plotNormal;
     int m_numPlotPoints;
+
+    float m_descentRate;
 };
 
 class MinimalOpenGLApp {

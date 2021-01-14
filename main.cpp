@@ -201,9 +201,6 @@ void Scope::render()
 {
     glBufferData(GL_ARRAY_BUFFER, m_coordinatesLength * sizeof(GLfloat), m_coordinates, GL_STREAM_DRAW);
 
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
     glUseProgram(m_program);
 
     GLuint color = glGetUniformLocation(m_program, "windowSize");
@@ -333,6 +330,7 @@ void FFTAudioCallback::doFFT()
     for (int i = 0; i < m_spectrumSize; i++) {
         magnitudeSpectrum[i] = (magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
     }
+    m_spectrum.update();
 }
 
 void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
@@ -348,11 +346,12 @@ void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buf
 }
 
 
-Spectrum::Spectrum(int fftSize)
+Spectrum::Spectrum(int fftSize, float descentRate)
     : m_spectrumSize(fftSize / 2 + 1),
     m_fftSize(fftSize),
     m_numChunks(0),
-    m_numPlotPoints(0)
+    m_numPlotPoints(0),
+    m_descentRate(descentRate)
 {
     m_chunkX.reserve(m_spectrumSize);
     m_chunkY.reserve(m_spectrumSize);
@@ -427,9 +426,11 @@ void Spectrum::setWindowSize(int windowWidth, int windowHeight)
     }
 
     m_numChunks = m_chunkX.size();
+    m_chunkY.resize(m_numChunks);
+
     m_numPlotPoints = m_numChunks * m_cubicResolution;
 
-    m_plotX.clear();
+    m_plotY.resize(m_numPlotPoints);
     m_plotX.resize(m_numPlotPoints);
 
     for (int i = 0; i < m_numPlotPoints; i++) {
@@ -451,8 +452,9 @@ void Spectrum::setWindowSize(int windowWidth, int windowHeight)
 
 void Spectrum::update()
 {
-    m_chunkY.clear();
-    m_chunkY.resize(m_numChunks);
+    for (int i = 0; i < m_numChunks; i++) {
+        m_chunkY[i] -= m_descentRate / g_windowHeight;
+    }
 
     for (int i = 0; i < m_spectrumSize; i++) {
         int chunk = m_binToChunk[i];
@@ -462,8 +464,6 @@ void Spectrum::update()
         m_chunkY[chunk] = std::max(m_chunkY[chunk], m_magnitudeSpectrum[i]);
     }
 
-    m_plotY.clear();
-    m_plotY.resize(m_numPlotPoints);
     for (int i = 0; i < m_numPlotPoints; i++) {
         int t1 = i / m_cubicResolution;
         int t0 = std::max(t1 - 1, 0);
@@ -493,9 +493,11 @@ int main(int argc, char** argv)
     MinimalOpenGLApp app(window);
 
     int fftSize = 1024;
-    Spectrum spectrum(fftSize);
-    FFTAudioCallback callback(spectrum);
+
+    Spectrum spectrum(fftSize, 50);
     spectrum.setWindowSize(g_windowWidth, g_windowHeight);
+
+    FFTAudioCallback callback(spectrum);
 
     PortAudioBackend audioBackend(&callback);
     audioBackend.run();
@@ -503,7 +505,9 @@ int main(int argc, char** argv)
     Scope scope(spectrum.getNumPlotPoints());
 
     while (!glfwWindowShouldClose(window)) {
-        spectrum.update();
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
         scope.plot(spectrum.getPlotX(), spectrum.getPlotY(), spectrum.getPlotNormal());
         scope.render();
 
