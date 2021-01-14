@@ -211,6 +211,20 @@ void Scope::plot(
     }
 }
 
+void Scope::plotFilled(
+    std::vector<float>& plotX,
+    std::vector<float>& plotY
+)
+{
+    for (int i = 0; i < plotY.size(); i++) {
+        m_coordinates[4 * i + 0] = 2 * plotX[i] - 1;
+        m_coordinates[4 * i + 1] = 2 * plotY[i] - 1;
+        m_coordinates[4 * i + 2] = 2 * plotX[i] - 1;
+        m_coordinates[4 * i + 3] = -1;
+    }
+}
+
+
 void Scope::render()
 {
     glBufferData(GL_ARRAY_BUFFER, m_coordinatesLength * sizeof(GLfloat), m_coordinates, GL_STREAM_DRAW);
@@ -397,7 +411,7 @@ float Spectrum::position(float frequency)
 
 void Spectrum::setWindowSize(int windowWidth, int windowHeight)
 {
-    int chunkN = 5;
+    int chunkN = 2;
 
     m_chunkX.clear();
 
@@ -519,7 +533,7 @@ int main(int argc, char** argv)
 
     Spectrum spectrum2(fftSize, 1e-3);
     spectrum2.setWindowSize(g_windowWidth, g_windowHeight);
-    Scope scope2(spectrum2.getNumPlotPoints(), colorFromHex(0x454846));
+    Scope scope2(spectrum2.getNumPlotPoints(), colorFromHex(0x2c2d2b));
 
     FFTAudioCallback callback(fftSize);
 
@@ -533,7 +547,7 @@ int main(int argc, char** argv)
         glClear(GL_COLOR_BUFFER_BIT);
 
         spectrum2.update(callback.getMagnitudeSpectrum());
-        scope2.plot(spectrum2.getPlotX(), spectrum2.getPlotY(), spectrum2.getPlotNormal());
+        scope2.plotFilled(spectrum2.getPlotX(), spectrum2.getPlotY());
         scope2.render();
 
         spectrum.update(callback.getMagnitudeSpectrum());

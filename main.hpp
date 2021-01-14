@@ -46,6 +46,7 @@ public:
         std::vector<float>& plotY,
         std::vector<float>& plotNormal
     );
+    void plotFilled(std::vector<float>& plotX, std::vector<float>& plotY);
 
     void render();
 
