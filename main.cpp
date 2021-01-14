@@ -328,7 +328,8 @@ void VisualizerAudioCallback::process(InputBuffer input_buffer, OutputBuffer out
 FFTAudioCallback::FFTAudioCallback(int bufferSize)
     : m_bufferSize(bufferSize),
     m_spectrumSize(bufferSize / 2 + 1),
-    m_numChunks(m_spectrumSize)
+    m_numChunks(0),
+    m_numPlotPoints(0)
 {
     m_writePos = 0;
 
@@ -344,6 +345,9 @@ FFTAudioCallback::FFTAudioCallback(int bufferSize)
     m_chunkX.reserve(m_spectrumSize);
     m_chunkY.reserve(m_spectrumSize);
     m_magnitudeSpectrum.resize(m_spectrumSize);
+
+    m_plotX.reserve(m_spectrumSize * m_cubicResolution);
+    m_plotY.reserve(m_spectrumSize * m_cubicResolution);
 
     m_binToChunk.reserve(m_spectrumSize);
 
@@ -377,8 +381,6 @@ void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
 
     m_chunkX.clear();
 
-    m_binsPerNominalChunk.clear();
-    m_binsPerNominalChunk.resize(m_spectrumSize);
     m_binToChunk.clear();
     m_binToChunk.resize(m_spectrumSize);
 
@@ -421,10 +423,22 @@ void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
     }
 
     m_numChunks = m_chunkX.size();
+    m_numPlotPoints = m_numChunks;
+
+    m_plotX.clear();
+    m_plotX.resize(m_numPlotPoints);
+
+    for (int i = 0; i < m_numPlotPoints; i++) {
+        m_plotX[i] = m_chunkX[i];
+    }
 }
 
 void FFTAudioCallback::doFFT()
 {
+    if (m_numPlotPoints == 0) {
+        return;
+    }
+
     fftw_execute(m_fftwPlan);
 
     float maxDb;
@@ -452,10 +466,16 @@ void FFTAudioCallback::doFFT()
 
     for (int i = 0; i < m_spectrumSize; i++) {
         int chunk = m_binToChunk[i];
-        if (chunk < 0) {
+        if (chunk < 0 || chunk >= m_chunkY.size()) {
             break;
         }
         m_chunkY[chunk] = std::max(m_chunkY[chunk], m_magnitudeSpectrum[i]);
+    }
+
+    m_plotY.clear();
+    m_plotY.resize(m_numPlotPoints);
+    for (int i = 0; i < m_numPlotPoints; i++) {
+        m_plotY[i] = m_chunkY[i];
     }
 }
 

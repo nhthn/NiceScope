@@ -34,9 +34,9 @@ public:
     float position(float frequency);
 
     void setWindowSize(int windowWidth, int windowHeight);
-    std::vector<float>& getPlotX() { return m_chunkX; };
-    std::vector<float>& getPlotY() { return m_chunkY; };
-    int getNumPlotPoints() { return m_numChunks; }
+    std::vector<float>& getPlotX() { return m_plotX; };
+    std::vector<float>& getPlotY() { return m_plotY; };
+    int getNumPlotPoints() { return m_numPlotPoints; }
 
 private:
     const int m_bufferSize;
@@ -52,7 +52,11 @@ private:
     std::vector<float> m_chunkX;
     std::vector<float> m_chunkY;
 
-    std::vector<int> m_binsPerNominalChunk;
+    const int m_cubicResolution = 5;
+    std::vector<float> m_plotX;
+    std::vector<float> m_plotY;
+    int m_numPlotPoints;
+
     std::vector<int> m_binToChunk;
     void doFFT();
 };
