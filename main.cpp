@@ -392,7 +392,7 @@ static float erbs(float frequency) {
 
 float Spectrum::position(float frequency)
 {
-    return (erbs(frequency) - erbs(20)) / (erbs(20e3) - erbs(20));
+    return (std::log2(frequency) - std::log2(50)) / (std::log2(20e3) - std::log2(50));
 }
 
 void Spectrum::setWindowSize(int windowWidth, int windowHeight)
@@ -511,7 +511,7 @@ int main(int argc, char** argv)
     auto window = setUpWindowAndOpenGL("Scope");
     MinimalOpenGLApp app(window);
 
-    int fftSize = 1024;
+    int fftSize = 2048;
 
     Spectrum spectrum(fftSize, 1e-2);
     spectrum.setWindowSize(g_windowWidth, g_windowHeight);
