@@ -48,6 +48,23 @@ MinimalOpenGLApp::MinimalOpenGLApp(GLFWwindow* window)
 
 int main(int argc, char** argv)
 {
+    std::string device = "system";
+
+    int i = 1;
+    while (i < argc) {
+        std::string arg = argv[i];
+        if (arg == "--device") {
+            i++;
+            if (i >= argc) {
+                throw std::runtime_error("Unexpected end of arguments");
+            }
+            device = argv[i];
+        } else {
+            throw std::runtime_error("Unrecognized argument");
+        }
+        i++;
+    }
+
     auto window = setUpWindowAndOpenGL("Scope");
     MinimalOpenGLApp app(window);
 
@@ -63,7 +80,7 @@ int main(int argc, char** argv)
 
     FFTAudioCallback callback(fftSize);
 
-    PortAudioBackend audioBackend(&callback, "system");
+    PortAudioBackend audioBackend(&callback, device);
     audioBackend.run();
 
     std::array<float, 4> color = colorFromHex(0x1d1f21);
