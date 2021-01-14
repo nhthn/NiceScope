@@ -46,32 +46,6 @@ MinimalOpenGLApp::MinimalOpenGLApp(GLFWwindow* window)
     glfwSetFramebufferSizeCallback(m_window, resize);
 }
 
-VisualizerAudioCallback::VisualizerAudioCallback(int bufferSize)
-    : m_bufferSize(bufferSize)
-{
-    m_writePos = 0;
-    m_buffer = static_cast<float*>(malloc(sizeof(float) * m_bufferSize));
-    for (int i = 0; i < m_bufferSize; i++) {
-        m_buffer[i] = 0;
-    }
-}
-
-VisualizerAudioCallback::~VisualizerAudioCallback()
-{
-    free(m_buffer);
-}
-
-void VisualizerAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
-{
-    for (int i = 0; i < frame_count; i++) {
-        m_buffer[m_writePos] = input_buffer[0][i];
-        m_writePos += 1;
-        if (m_writePos == m_bufferSize) {
-            m_writePos = 0;
-        }
-    }
-}
-
 int main(int argc, char** argv)
 {
     auto window = setUpWindowAndOpenGL("Scope");
