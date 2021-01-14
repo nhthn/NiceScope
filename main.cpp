@@ -4,6 +4,16 @@ static std::mutex g_magnitudeSpectrumMutex;
 
 const int k_maxMessageLength = 1024;
 
+static std::array<float, 4> colorFromHex(int string)
+{
+    return {{
+        (string >> (4 * 4) & 0xff) / 255.0f,
+        (string >> (2 * 4) & 0xff) / 255.0f,
+        (string & 0xff) / 255.0f,
+        1.0f
+    }};
+}
+
 static float cubicInterpolate(float t, float y0, float y1, float y2, float y3)
 {
     return (
@@ -505,19 +515,21 @@ int main(int argc, char** argv)
 
     Spectrum spectrum(fftSize, 1e-2);
     spectrum.setWindowSize(g_windowWidth, g_windowHeight);
-    Scope scope(spectrum.getNumPlotPoints(), {{1.0, 1.0, 1.0, 1.0}});
+    Scope scope(spectrum.getNumPlotPoints(), colorFromHex(0xc5c8c6));
 
     Spectrum spectrum2(fftSize, 1e-3);
     spectrum2.setWindowSize(g_windowWidth, g_windowHeight);
-    Scope scope2(spectrum2.getNumPlotPoints(), {{0.3, 0.3, 0.3, 1.0}});
+    Scope scope2(spectrum2.getNumPlotPoints(), colorFromHex(0x454846));
 
     FFTAudioCallback callback(fftSize);
 
     PortAudioBackend audioBackend(&callback);
     audioBackend.run();
 
+    std::array<float, 4> color = colorFromHex(0x1d1f21);
+
     while (!glfwWindowShouldClose(window)) {
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClearColor(color[0], color[1], color[2], color[3]);
         glClear(GL_COLOR_BUFFER_BIT);
 
         spectrum2.update(callback.getMagnitudeSpectrum());
