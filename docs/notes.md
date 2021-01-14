@@ -1,24 +1,8 @@
-To make a log spectrum view, we need a way to map the frequency of each bin to an X position on the scope from 0 to 1. As we are only interested in bins from 20 to 20,000 Hz, a first start would look like this:
-
-    freq_min = 20
-    freq_max = 20e3
-
-    def position(freq):
-        return (math.log2(freq) - math.log2(freq_low)) / (math.log2(freq_max) - math.log2(freq_min))
-
-This is logarithmic, but low frequencies take up too much horizontal space. A good strategy would be to use psychoacoustic spacing rather than logarithmic:
-
-    ERBS(f) = 21.4 log10(0.00437 f + 1)
-    position(f) = (ERBS(f) - ERBS(f_min)) / (ERBS(f_max) - ERBS(f_min))
-
-Chunking bins
--------------
-
-There is another problem -- in the high frequencies, there are usually several FFT bins per pixel. This causes a lot of CPU/GPU usage to draw for very small features, and makes the curves look noisy and unattractive.
+In the high frequencies, there are usually several FFT bins per pixel. This causes a lot of CPU/GPU usage to draw for very small features, and makes the curves look noisy and unattractive.
 
 We propose a scheme that displays less data, but looks nicer. At high frequencies, group the frequencies together that belong to chunks of n pixels. (n is small, usually only 2 or 3, and increase that for HiDPI displays.) Each chunk displays only the highest amplitude of the bins it contains.
 
-Let W be the width of the scope in pixels. Then this function gives us the nominal chunk index of a given frequency:
+Let W be the width of the scope in pixels. Let `position` denote the function mapping frequency to X position from 0 to 1. Then this function gives us the nominal chunk index of a given frequency:
 
     frequency_to_nominal_chunk_index(f) = floor(position(f) / (n / W))
 
