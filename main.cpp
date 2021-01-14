@@ -401,40 +401,29 @@ void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
         }
         int nominalChunk = static_cast<int>(std::floor(thePosition * windowWidth / chunkN));
         if (foundMultiChunk) {
-            chunkIndex = nominalChunk - firstMultiChunkOffset;
+            chunkIndex = firstMultiChunk + nominalChunk - firstMultiChunkOffset;
             m_binToChunk[i] = chunkIndex;
+            if (nominalChunk != lastNominalChunk) {
+                m_plotX.push_back(thePosition);
+            }
         } else {
             chunkIndex = i;
             m_binToChunk[i] = i;
+            m_plotX.push_back(thePosition);
             if (nominalChunk == lastNominalChunk) {
+                std::cout << "Found multichunk, bin " << i << std::endl;
                 foundMultiChunk = true;
                 firstMultiChunk = i;
                 firstMultiChunkOffset = nominalChunk;
                 firstMultiChunkPosition = thePosition;
             }
-            lastNominalChunk = nominalChunk;
         }
+        lastNominalChunk = nominalChunk;
     }
 
-    m_numPlotPoints = chunkIndex + 1;
+    m_numPlotPoints = m_plotX.size();
     m_plotX.resize(m_numPlotPoints);
     m_plotY.resize(m_numPlotPoints);
-
-    for (int i = 0; i < firstMultiChunk; i++) {
-        m_plotX[i] = position(fftBinToFrequency(i));
-    }
-
-    for (int i = firstMultiChunk; i < m_numPlotPoints; i++) {
-        for (int j = 0; j < m_spectrumSize; j++) {
-            float thePosition = position(fftBinToFrequency(j));
-            int nominalChunk = static_cast<int>(std::floor(thePosition * windowWidth / chunkN));
-            int chunkIndex = nominalChunk - firstMultiChunkOffset;
-            if (chunkIndex == i) {
-                m_plotX[i] = thePosition;
-                break;
-            }
-        }
-    }
 }
 
 void FFTAudioCallback::doFFT()
