@@ -9,17 +9,19 @@ Done:
 - Basic PortAudio + OpenGL app working. PortAudio implies compatibility with ALSA, JACK, and PulseAudio.
 - Cubic interpolation on the CPU.
 - Constant-thickness spline.
+- Hann window.
+- History.
 
 Todo:
 
-- Hann window.
-- History.
+- CMake.
+- Configuration file.
+- Allow specification of JACK device(s).
 - Investigate whether cubic interpolation in vertex shader is a good idea.
 
 Goals:
 
 - Logarithmic FFT spectrum plotter that looks at least as good as Fab-Filter Pro-Q and offerings from Ableton and Image Line.
-  - "Ghost" images left behind.
   - Stereo plot.
   - Smart adaptation to dynamic range.
 - Pretty oscilloscope with adaptive period maybe?

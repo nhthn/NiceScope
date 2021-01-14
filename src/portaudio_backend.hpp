@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <iostream>
 #include "portaudio.h"
 
@@ -12,7 +13,7 @@ public:
 
 class PortAudioBackend {
 public:
-    PortAudioBackend(AudioCallback* callback);
+    PortAudioBackend(AudioCallback* callback, std::string device);
 
     void run();
     void end();
@@ -30,6 +31,8 @@ private:
     PaSampleFormat sample_format;
     PaStreamParameters input_parameters;
     PaStreamParameters output_parameters;
+
+    std::string m_device;
 
     void handle_error(PaError error);
     int find_device();

@@ -1,9 +1,10 @@
 #include "portaudio_backend.hpp"
 
 
-PortAudioBackend::PortAudioBackend(AudioCallback* callback)
+PortAudioBackend::PortAudioBackend(AudioCallback* callback, std::string device)
     : m_callback(callback)
     , sample_format(paFloat32 | paNonInterleaved)
+    , m_device(device)
 {
 }
 
@@ -70,7 +71,7 @@ int PortAudioBackend::find_device() {
         int device_index = Pa_HostApiDeviceIndexToDeviceIndex(host_api_index, i);
         const PaDeviceInfo* info = Pa_GetDeviceInfo(device_index);
         std::string name = info->name;
-        if (name == "system") {
+        if (name == m_device) {
             return device_index;
         }
     }

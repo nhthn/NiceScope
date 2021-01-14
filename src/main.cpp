@@ -63,7 +63,7 @@ int main(int argc, char** argv)
 
     FFTAudioCallback callback(fftSize);
 
-    PortAudioBackend audioBackend(&callback);
+    PortAudioBackend audioBackend(&callback, "system");
     audioBackend.run();
 
     std::array<float, 4> color = colorFromHex(0x1d1f21);
