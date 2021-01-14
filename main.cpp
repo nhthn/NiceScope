@@ -374,7 +374,7 @@ float FFTAudioCallback::position(float frequency)
 
 void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
 {
-    int chunkN = 2;
+    int chunkN = 5;
 
     m_plotX.clear();
     m_plotY.clear();
@@ -409,6 +409,7 @@ void FFTAudioCallback::setWindowSize(int windowWidth, int windowHeight)
         } else {
             chunkIndex = i;
             m_binToChunk[i] = i;
+            // FIXME may be an off-by-one error in here for the first multichunk
             m_plotX.push_back(thePosition);
             if (nominalChunk == lastNominalChunk) {
                 std::cout << "Found multichunk, bin " << i << std::endl;
