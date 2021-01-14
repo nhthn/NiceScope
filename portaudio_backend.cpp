@@ -1,5 +1,6 @@
 #include "portaudio_backend.hpp"
 
+
 PortAudioBackend::PortAudioBackend(AudioCallback* callback)
     : m_callback(callback)
     , sample_format(paFloat32 | paNonInterleaved)
@@ -59,8 +60,8 @@ void PortAudioBackend::handle_error(PaError error) {
 int PortAudioBackend::find_device() {
     PaHostApiIndex host_api_index = Pa_HostApiTypeIdToHostApiIndex(paJACK);
     if (host_api_index < 0) {
-        throw std::runtime_error("Couldn't find JACK.");
-        exit(1);
+        std::cerr << "JACK not found, using default device" << std::endl;
+        return Pa_GetDefaultInputDevice();
     }
 
     const PaHostApiInfo* host_api_info = Pa_GetHostApiInfo(host_api_index);
