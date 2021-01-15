@@ -18,9 +18,14 @@ const char* k_fragmentShaderSource = (
     "}\n"
 );
 
-Scope::Scope(int numPoints, std::array<float, 4> color)
+Scope::Scope(
+    int numPoints,
+    std::array<float, 4> color,
+    int thicknessInPixels
+)
     : m_shaderProgram(k_vertexShaderSource, k_fragmentShaderSource),
-    m_color(color)
+    m_color(color),
+    m_thicknessInPixels(thicknessInPixels)
 {
     m_program = m_shaderProgram.getProgram();
 

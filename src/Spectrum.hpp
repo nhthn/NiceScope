@@ -7,7 +7,7 @@ extern std::mutex g_magnitudeSpectrumMutex;
 
 class Spectrum {
 public:
-    Spectrum(int fftSize, float attack, float release);
+    Spectrum(int fftSize, float plotPointPadding, float attack, float release);
     int getFFTSize() { return m_fftSize; };
 
     void setWindowSize(int windowWidth, int windowHeight);
@@ -38,4 +38,6 @@ private:
 
     float m_kAttack;
     float m_kRelease;
+
+    float m_plotPointPadding;
 };

@@ -14,7 +14,7 @@ FFTAudioCallback::FFTAudioCallback(int fftSize) :
     m_window.resize(m_bufferSize);
     for (int i = 0; i < m_bufferSize; i++) {
         float t = static_cast<float>(i) / m_bufferSize;
-        m_window[i] = (std::cos(t * 2 * 3.14159265358979) + 1) * 0.5;
+        m_window[i] = (-std::cos(t * 2 * 3.14159265358979) + 1) * 0.5;
     }
 
     m_complexSpectrum = static_cast<fftw_complex*>(

@@ -21,11 +21,17 @@ static float dCubicInterpolate(float t, float y0, float y1, float y2, float y3)
     ) * 0.5;
 }
 
-Spectrum::Spectrum(int fftSize, float attack, float release)
+Spectrum::Spectrum(
+    int fftSize,
+    float plotPointPadding,
+    float attack,
+    float release
+)
     : m_spectrumSize(fftSize / 2 + 1),
     m_fftSize(fftSize),
     m_numChunks(0),
-    m_numPlotPoints(0)
+    m_numPlotPoints(0),
+    m_plotPointPadding(plotPointPadding)
 {
     m_kAttack = 1 - std::exp(-attack);
     m_kRelease = 1 - std::exp(-release);
@@ -57,8 +63,6 @@ float Spectrum::position(float frequency)
 
 void Spectrum::setWindowSize(int windowWidth, int windowHeight)
 {
-    int chunkN = 2;
-
     m_chunkX.clear();
 
     m_binToChunk.clear();
@@ -79,7 +83,7 @@ void Spectrum::setWindowSize(int windowWidth, int windowHeight)
             m_binToChunk[i] = -1;
             continue;
         }
-        int nominalChunk = static_cast<int>(std::floor(thePosition * windowWidth / chunkN));
+        int nominalChunk = static_cast<int>(std::floor(thePosition * windowWidth / m_plotPointPadding));
         if (foundMultiChunk) {
             chunkIndex = firstMultiChunk + nominalChunk - firstMultiChunkOffset;
             m_binToChunk[i] = chunkIndex;

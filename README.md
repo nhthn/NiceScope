@@ -14,9 +14,7 @@ Done:
 
 Todo:
 
-- CMake.
 - Configuration file.
-- Allow specification of JACK device(s).
 - Investigate whether cubic interpolation in vertex shader is a good idea.
 
 Goals:

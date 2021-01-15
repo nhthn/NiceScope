@@ -11,7 +11,11 @@ extern volatile int g_windowHeight;
 
 class Scope {
 public:
-    Scope(int numPoints, std::array<float, 4> color);
+    Scope(
+        int numPoints,
+        std::array<float, 4> color,
+        int thicknessInPixels
+    );
     ~Scope();
 
     int getProgram() { return m_program; }
@@ -39,7 +43,7 @@ private:
     int m_coordinatesLength;
     GLuint* m_elements;
     int m_elementsLength;
-    float m_thicknessInPixels = 10;
+    float m_thicknessInPixels;
 
     void makeVertexBuffer();
     void makeArrayBuffer();
