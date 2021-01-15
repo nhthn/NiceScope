@@ -24,6 +24,10 @@ GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle) {
     if (!glfwInit()) {
         throw std::runtime_error("GLFW initialization failed.");
     }
+
+    glfwWindowHint(GLFW_SAMPLES, 4);
+    glEnable(GL_MULTISAMPLE);
+
     GLFWwindow* window = glfwCreateWindow(g_windowWidth, g_windowHeight, windowTitle, NULL, NULL);
     if (!window) {
         glfwTerminate();
@@ -72,11 +76,11 @@ int main(int argc, char** argv)
 
     Spectrum spectrum(fftSize, 3, 0.1, 1.5);
     spectrum.setWindowSize(g_windowWidth, g_windowHeight);
-    Scope scope(spectrum.getNumPlotPoints(), colorFromHex(0xc5c8c6), 10.0);
+    Scope scope(spectrum.getNumPlotPoints(), colorFromHex(0xc5c8c6), 8.0);
 
     Spectrum spectrum2(fftSize, 3, 3, 6);
     spectrum2.setWindowSize(g_windowWidth, g_windowHeight);
-    Scope scope2(spectrum2.getNumPlotPoints(), colorFromHex(0x3c3d3b), 10.0);
+    Scope scope2(spectrum2.getNumPlotPoints(), colorFromHex(0x3c3d3b), 8.0);
 
     FFTAudioCallback callback(fftSize);
 
