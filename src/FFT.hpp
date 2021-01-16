@@ -1,8 +1,8 @@
 #pragma once
-#include <vector>
 #include <cmath>
-#include <mutex>
 #include <memory>
+#include <mutex>
+#include <vector>
 
 #include <fftw3.h>
 
@@ -26,7 +26,7 @@ private:
     int m_writePos;
     float m_maxDb = -90.0f;
     double* m_samples;
-    fftw_complex *m_complexSpectrum;
+    fftw_complex* m_complexSpectrum;
     fftw_plan m_fftwPlan;
     void doFFT();
     std::vector<float> m_window;

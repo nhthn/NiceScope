@@ -68,4 +68,3 @@ void ShaderProgram::cleanUp()
     glDeleteShader(m_vertexShader);
     glDeleteShader(m_fragmentShader);
 }
-

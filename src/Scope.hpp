@@ -1,8 +1,8 @@
 #pragma once
-#include <cmath>
-#include <array>
-#include <vector>
 #include <GL/glew.h>
+#include <array>
+#include <cmath>
+#include <vector>
 
 #include "ShaderProgram.hpp"
 
@@ -14,8 +14,7 @@ public:
     Scope(
         int numPoints,
         std::array<float, 4> color,
-        int thicknessInPixels
-    );
+        int thicknessInPixels);
     ~Scope();
 
     int getProgram() { return m_program; }
@@ -24,8 +23,7 @@ public:
     void plot(
         std::vector<float>& plotX,
         std::vector<float>& plotY,
-        std::vector<float>& plotNormal
-    );
+        std::vector<float>& plotNormal);
     void plotFilled(std::vector<float>& plotX, std::vector<float>& plotY);
 
     void render();
@@ -50,4 +48,3 @@ private:
     void makeElementBuffer();
     void cleanUp();
 };
-

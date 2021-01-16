@@ -1,7 +1,7 @@
 #pragma once
-#include <string>
-#include <iostream>
 #include "portaudio.h"
+#include <iostream>
+#include <string>
 
 typedef float* const* InputBuffer;
 typedef float** OutputBuffer;
@@ -20,8 +20,7 @@ public:
     void process(
         InputBuffer input_buffer,
         OutputBuffer output_buffer,
-        int frame_count
-    );
+        int frame_count);
 
 private:
     AudioCallback* m_callback;
@@ -38,11 +37,10 @@ private:
     void handle_error(PaError error);
     int find_device();
     static int stream_callback(
-        const void *inputBuffer,
-        void *outputBuffer,
+        const void* inputBuffer,
+        void* outputBuffer,
         unsigned long frameCount,
         const PaStreamCallbackTimeInfo* timeInfo,
         PaStreamCallbackFlags statusFlags,
-        void *userData
-    );
+        void* userData);
 };

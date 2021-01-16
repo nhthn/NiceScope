@@ -1,7 +1,7 @@
 #pragma once
-#include <vector>
 #include <cmath>
 #include <mutex>
+#include <vector>
 
 extern std::mutex g_magnitudeSpectrumMutex;
 
@@ -20,6 +20,7 @@ public:
 
     float fftBinToFrequency(int fftBin);
     float position(float frequency);
+
 private:
     const int m_fftSize;
     const int m_spectrumSize;

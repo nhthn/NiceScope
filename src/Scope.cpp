@@ -1,31 +1,28 @@
 #include "Scope.hpp"
 
 const char* k_vertexShaderSource = ("#version 130\n"
-                                  "in vec2 pos;\n"
-                                  "void main()\n"
-                                  "{\n"
-                                  "    gl_Position = vec4(pos, 1, 1);\n"
-                                  "}\n");
+                                    "in vec2 pos;\n"
+                                    "void main()\n"
+                                    "{\n"
+                                    "    gl_Position = vec4(pos, 1, 1);\n"
+                                    "}\n");
 
-const char* k_fragmentShaderSource = (
-    "#version 130\n"
-    "uniform vec2 windowSize;\n"
-    "uniform vec4 color;\n"
-    "out vec4 fragColor;\n"
-    "void main()\n"
-    "{\n"
-    "fragColor = color;\n"
-    "}\n"
-);
+const char* k_fragmentShaderSource = ("#version 130\n"
+                                      "uniform vec2 windowSize;\n"
+                                      "uniform vec4 color;\n"
+                                      "out vec4 fragColor;\n"
+                                      "void main()\n"
+                                      "{\n"
+                                      "fragColor = color;\n"
+                                      "}\n");
 
 Scope::Scope(
     int numPoints,
     std::array<float, 4> color,
-    int thicknessInPixels
-)
-    : m_shaderProgram(k_vertexShaderSource, k_fragmentShaderSource),
-    m_color(color),
-    m_thicknessInPixels(thicknessInPixels)
+    int thicknessInPixels)
+    : m_shaderProgram(k_vertexShaderSource, k_fragmentShaderSource)
+    , m_color(color)
+    , m_thicknessInPixels(thicknessInPixels)
 {
     m_program = m_shaderProgram.getProgram();
 
@@ -67,8 +64,7 @@ Scope::~Scope()
 void Scope::plot(
     std::vector<float>& plotX,
     std::vector<float>& plotY,
-    std::vector<float>& plotNormal
-)
+    std::vector<float>& plotNormal)
 {
     for (int i = 0; i < plotY.size(); i++) {
         float thicknessX = std::sin(plotNormal[i]) * m_thicknessInPixels / g_windowWidth * 0.5;
@@ -82,8 +78,7 @@ void Scope::plot(
 
 void Scope::plotFilled(
     std::vector<float>& plotX,
-    std::vector<float>& plotY
-)
+    std::vector<float>& plotY)
 {
     for (int i = 0; i < plotY.size(); i++) {
         m_coordinates[4 * i + 0] = 2 * plotX[i] - 1;
@@ -92,7 +87,6 @@ void Scope::plotFilled(
         m_coordinates[4 * i + 3] = -1;
     }
 }
-
 
 void Scope::render()
 {
@@ -144,4 +138,3 @@ void Scope::cleanUp()
     glBindVertexArray(0);
     glDeleteVertexArrays(1, &m_vao);
 }
-

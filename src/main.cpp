@@ -2,12 +2,10 @@
 
 static std::array<float, 4> colorFromHex(int string, float alpha)
 {
-    return {{
-        (string >> (4 * 4) & 0xff) / 255.0f,
+    return { { (string >> (4 * 4) & 0xff) / 255.0f,
         (string >> (2 * 4) & 0xff) / 255.0f,
         (string & 0xff) / 255.0f,
-        alpha
-    }};
+        alpha } };
 }
 
 static std::array<float, 4> colorFromHex(int string)
@@ -25,7 +23,8 @@ static void resize(GLFWwindow* window, int width, int height)
     g_windowHeight = height;
 }
 
-GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle) {
+GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle)
+{
     if (!glfwInit()) {
         throw std::runtime_error("GLFW initialization failed.");
     }

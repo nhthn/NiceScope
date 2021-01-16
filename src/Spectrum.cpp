@@ -5,33 +5,32 @@ std::mutex g_magnitudeSpectrumMutex;
 static float cubicInterpolate(float t, float y0, float y1, float y2, float y3)
 {
     return (
-        (-y0 + 3 * y1 - 3 * y2 + y3) * t * t * t
-        + (2 * y0 - 5 * y1 + 4 * y2 - y3) * t * t
-        + (-y0 + y2) * t
-        + 2 * y1
-    ) * 0.5;
+               (-y0 + 3 * y1 - 3 * y2 + y3) * t * t * t
+               + (2 * y0 - 5 * y1 + 4 * y2 - y3) * t * t
+               + (-y0 + y2) * t
+               + 2 * y1)
+        * 0.5;
 }
 
 static float dCubicInterpolate(float t, float y0, float y1, float y2, float y3)
 {
     return (
-        3 * (-y0 + 3 * y1 - 3 * y2 + y3) * t * t
-        + 2 * (2 * y0 - 5 * y1 + 4 * y2 - y3) * t
-        + (-y0 + y2)
-    ) * 0.5;
+               3 * (-y0 + 3 * y1 - 3 * y2 + y3) * t * t
+               + 2 * (2 * y0 - 5 * y1 + 4 * y2 - y3) * t
+               + (-y0 + y2))
+        * 0.5;
 }
 
 Spectrum::Spectrum(
     int fftSize,
     float plotPointPadding,
     float attack,
-    float release
-)
-    : m_spectrumSize(fftSize / 2 + 1),
-    m_fftSize(fftSize),
-    m_numChunks(0),
-    m_numPlotPoints(0),
-    m_plotPointPadding(plotPointPadding)
+    float release)
+    : m_spectrumSize(fftSize / 2 + 1)
+    , m_fftSize(fftSize)
+    , m_numChunks(0)
+    , m_numPlotPoints(0)
+    , m_plotPointPadding(plotPointPadding)
 {
     m_kAttack = 1 - std::exp(-attack);
     m_kRelease = 1 - std::exp(-release);
@@ -52,7 +51,8 @@ float Spectrum::fftBinToFrequency(int fftBin)
     return 24000 * static_cast<float>(fftBin) / m_spectrumSize;
 }
 
-static float erbs(float frequency) {
+static float erbs(float frequency)
+{
     return 21.4 * std::log10(0.00437f * frequency + 1);
 }
 
@@ -172,8 +172,6 @@ void Spectrum::update(std::vector<float>& magnitudeSpectrum)
         float x3 = m_chunkX[t3];
         m_plotNormal[i] = std::atan2(
             dCubicInterpolate(t, y0, y1, y2, y3),
-            dCubicInterpolate(t, x0, x1, x2, x3)
-        );
+            dCubicInterpolate(t, x0, x1, x2, x3));
     }
 }
-

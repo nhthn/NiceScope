@@ -1,6 +1,5 @@
 #include "portaudio_backend.hpp"
 
-
 PortAudioBackend::PortAudioBackend(AudioCallback* callback, std::string device, int numChannels)
     : m_callback(callback)
     , sample_format(paFloat32 | paNonInterleaved)
@@ -9,7 +8,8 @@ PortAudioBackend::PortAudioBackend(AudioCallback* callback, std::string device, 
 {
 }
 
-void PortAudioBackend::run() {
+void PortAudioBackend::run()
+{
     handle_error(Pa_Initialize());
 
     int device = find_device();
@@ -34,24 +34,25 @@ void PortAudioBackend::run() {
             m_block_size,
             stream_flags,
             stream_callback,
-            user_data
-        )
-    );
+            user_data));
 
     handle_error(Pa_StartStream(m_stream));
 }
 
-void PortAudioBackend::end() {
+void PortAudioBackend::end()
+{
     handle_error(Pa_StopStream(m_stream));
     handle_error(Pa_CloseStream(m_stream));
     handle_error(Pa_Terminate());
 }
 
-void PortAudioBackend::process(InputBuffer input_buffer, OutputBuffer output_buffer, int numFrames) {
+void PortAudioBackend::process(InputBuffer input_buffer, OutputBuffer output_buffer, int numFrames)
+{
     m_callback->process(input_buffer, output_buffer, numFrames);
 }
 
-void PortAudioBackend::handle_error(PaError error) {
+void PortAudioBackend::handle_error(PaError error)
+{
     if (error == paNoError) {
         return;
     }
@@ -59,7 +60,8 @@ void PortAudioBackend::handle_error(PaError error) {
     throw std::runtime_error("PortAudio error");
 }
 
-int PortAudioBackend::find_device() {
+int PortAudioBackend::find_device()
+{
     PaHostApiIndex host_api_index = Pa_HostApiTypeIdToHostApiIndex(paJACK);
     if (host_api_index < 0) {
         std::cerr << "JACK not found, using default device" << std::endl;
@@ -80,18 +82,17 @@ int PortAudioBackend::find_device() {
 }
 
 int PortAudioBackend::stream_callback(
-    const void *inputBuffer,
-    void *outputBuffer,
+    const void* inputBuffer,
+    void* outputBuffer,
     unsigned long frameCount,
     const PaStreamCallbackTimeInfo* timeInfo,
     PaStreamCallbackFlags statusFlags,
-    void *userData
-) {
+    void* userData)
+{
     PortAudioBackend* backend = static_cast<PortAudioBackend*>(userData);
     backend->process(
         static_cast<InputBuffer>(inputBuffer),
         static_cast<OutputBuffer>(outputBuffer),
-        frameCount
-    );
+        frameCount);
     return 0;
 }

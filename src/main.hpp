@@ -5,11 +5,11 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "portaudio_backend.hpp"
-#include "ShaderProgram.hpp"
-#include "Scope.hpp"
-#include "Spectrum.hpp"
 #include "FFT.hpp"
+#include "Scope.hpp"
+#include "ShaderProgram.hpp"
+#include "Spectrum.hpp"
+#include "portaudio_backend.hpp"
 
 extern volatile int g_windowWidth;
 extern volatile int g_windowHeight;

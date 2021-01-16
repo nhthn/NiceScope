@@ -25,10 +25,9 @@ void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buf
     }
 }
 
-
-FFT::FFT(int fftSize) :
-    m_bufferSize(fftSize),
-    m_spectrumSize(m_bufferSize / 2 + 1)
+FFT::FFT(int fftSize)
+    : m_bufferSize(fftSize)
+    , m_spectrumSize(m_bufferSize / 2 + 1)
 {
     m_writePos = 0;
 
@@ -44,12 +43,10 @@ FFT::FFT(int fftSize) :
     }
 
     m_complexSpectrum = static_cast<fftw_complex*>(
-        fftw_malloc(sizeof(fftw_complex) * m_spectrumSize)
-    );
+        fftw_malloc(sizeof(fftw_complex) * m_spectrumSize));
 
     m_fftwPlan = fftw_plan_dft_r2c_1d(
-        m_bufferSize, m_samples, m_complexSpectrum, FFTW_MEASURE
-    );
+        m_bufferSize, m_samples, m_complexSpectrum, FFTW_MEASURE);
 
     m_magnitudeSpectrum.resize(m_spectrumSize);
 }
@@ -100,4 +97,3 @@ void FFT::process(InputBuffer input_buffer, OutputBuffer output_buffer, int fram
         }
     }
 }
-
