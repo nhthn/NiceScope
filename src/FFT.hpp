@@ -14,6 +14,12 @@ class FFT {
 public:
     FFT(int fftSize, int m_channel);
     ~FFT();
+
+    FFT(const FFT& other) = delete;
+    FFT& operator=(const FFT& other) = delete;
+    FFT(const FFT&& other) = delete;
+    FFT& operator=(const FFT&& other) = delete;
+
     void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count);
     int getBufferSize() { return m_bufferSize; }
     int getSpectrumSize() { return m_spectrumSize; }
