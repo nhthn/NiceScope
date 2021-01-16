@@ -1,3 +1,14 @@
+## Temporal smoothing
+
+By default, STFT graphs are jittery. This makes it hard to concentrate on the all-important peaks when they're constantly jumping and wiggling around. There are two solutions to this:
+
+- Persistence of vision: show a translucent history of the last few FFT frames, similar to an oscilloscope.
+- Temporal smoothing: fake a smoother spectrum by using a low-pass filter on each individual displayed magnitude. (I suspect, although I'm not certain, that oscilloscope spectrum views employ envelope followers.)
+
+I went with temporal smoothing because it's easier to program and less likely to produce distracting effects. There's nothing wrong with a good CRT emulation, but the aesthetic of this scope leans more clean and minimal.
+
+## Pixel chunking
+
 In the high frequencies, there are usually several FFT bins per pixel. This causes a lot of CPU/GPU usage to draw for very small features, and makes the curves look noisy and unattractive.
 
 We propose a scheme that displays less data, but looks nicer. At high frequencies, group the frequencies together that belong to chunks of n pixels. (n is small, usually only 2 or 3, and increase that for HiDPI displays.) Each chunk displays only the highest amplitude of the bins it contains.
