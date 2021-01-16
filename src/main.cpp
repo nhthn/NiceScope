@@ -93,12 +93,12 @@ int main(int argc, char** argv)
     spectrum2.setWindowSize(g_windowWidth, g_windowHeight);
     Scope scope2(spectrum2.getNumPlotPoints(), colorFromHex(0x3c3d3b), 8.0);
 
-    FFT fftLeft(fftSize, 0);
-    FFT fftRight(fftSize, 1);
+    auto fftLeft = std::make_shared<FFT>(fftSize, 0);
+    auto fftRight = std::make_shared<FFT>(fftSize, 1);
 
     FFTAudioCallback callback(2, fftSize);
-    callback.addFFT(&fftLeft);
-    callback.addFFT(&fftRight);
+    callback.addFFT(fftLeft);
+    callback.addFFT(fftRight);
 
     PortAudioBackend audioBackend(&callback, device, 2);
     audioBackend.run();
@@ -109,15 +109,15 @@ int main(int argc, char** argv)
         glClearColor(color[0], color[1], color[2], color[3]);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        spectrum2.update(fftLeft.getMagnitudeSpectrum());
+        spectrum2.update(fftLeft->getMagnitudeSpectrum());
         scope2.plotFilled(spectrum2.getPlotX(), spectrum2.getPlotY());
         scope2.render();
 
-        spectrumLeft.update(fftLeft.getMagnitudeSpectrum());
+        spectrumLeft.update(fftLeft->getMagnitudeSpectrum());
         scopeLeft.plot(spectrumLeft.getPlotX(), spectrumLeft.getPlotY(), spectrumLeft.getPlotNormal());
         scopeLeft.render();
 
-        spectrumRight.update(fftRight.getMagnitudeSpectrum());
+        spectrumRight.update(fftRight->getMagnitudeSpectrum());
         scopeRight.plot(spectrumRight.getPlotX(), spectrumRight.getPlotY(), spectrumRight.getPlotNormal());
         scopeRight.render();
 
