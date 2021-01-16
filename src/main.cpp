@@ -74,11 +74,11 @@ int main(int argc, char** argv)
 
     int fftSize = 2048;
 
-    Spectrum spectrum(fftSize, 3, 0.1, 1.5);
+    Spectrum spectrum(fftSize, 2, 0.1, 1.5);
     spectrum.setWindowSize(g_windowWidth, g_windowHeight);
     Scope scope(spectrum.getNumPlotPoints(), colorFromHex(0xc5c8c6), 8.0);
 
-    Spectrum spectrum2(fftSize, 3, 3, 6);
+    Spectrum spectrum2(fftSize, 2, 3, 5);
     spectrum2.setWindowSize(g_windowWidth, g_windowHeight);
     Scope scope2(spectrum2.getNumPlotPoints(), colorFromHex(0x3c3d3b), 8.0);
 
