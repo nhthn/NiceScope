@@ -45,9 +45,9 @@ public:
     FFTAudioCallback(int numChannels, int fftSize);
     void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) override;
 
-    void addFFT(std::shared_ptr<FFT> fft);
+    void addFFT(FFT* fft);
 
 private:
     const int m_numChannels;
-    std::vector<std::shared_ptr<FFT>> m_ffts;
+    std::vector<FFT*> m_ffts;
 };

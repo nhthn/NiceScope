@@ -5,7 +5,7 @@ FFTAudioCallback::FFTAudioCallback(int numChannels, int fftSize)
 {
 }
 
-void FFTAudioCallback::addFFT(std::shared_ptr<FFT> fft) {
+void FFTAudioCallback::addFFT(FFT* fft) {
     m_ffts.push_back(fft);
 }
 
