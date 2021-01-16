@@ -2,6 +2,7 @@
 #include <vector>
 #include <cmath>
 #include <mutex>
+#include <memory>
 
 #include <fftw3.h>
 
@@ -9,11 +10,11 @@
 
 extern std::mutex g_magnitudeSpectrumMutex;
 
-class FFTAudioCallback : public AudioCallback {
+class FFT {
 public:
-    FFTAudioCallback(int fftSize);
-    ~FFTAudioCallback();
-    void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) override;
+    FFT(int fftSize);
+    ~FFT();
+    void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count, int channel);
     int getBufferSize() { return m_bufferSize; }
     int getSpectrumSize() { return m_spectrumSize; }
 
@@ -30,4 +31,17 @@ private:
     void doFFT();
     std::vector<float> m_window;
     std::vector<float> m_magnitudeSpectrum;
+};
+
+class FFTAudioCallback : public AudioCallback {
+public:
+    FFTAudioCallback(int numChannels, int fftSize);
+    ~FFTAudioCallback();
+    void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) override;
+
+    std::vector<float>& getMagnitudeSpectrum(int channel) { return m_ffts[channel]->getMagnitudeSpectrum(); }
+
+private:
+    const int m_numChannels;
+    std::vector<FFT*> m_ffts;
 };

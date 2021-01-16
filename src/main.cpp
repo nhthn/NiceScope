@@ -82,15 +82,19 @@ int main(int argc, char** argv)
 
     int fftSize = 2048;
 
-    Spectrum spectrum(fftSize, 2, 0.1, 1.5);
-    spectrum.setWindowSize(g_windowWidth, g_windowHeight);
-    Scope scope(spectrum.getNumPlotPoints(), colorFromHex(0xc5c8c6), 8.0);
+    Spectrum spectrumLeft(fftSize, 2, 0.1, 1.5);
+    spectrumLeft.setWindowSize(g_windowWidth, g_windowHeight);
+    Scope scopeLeft(spectrumLeft.getNumPlotPoints(), colorFromHex(0xf0c674, 0.8), 8.0);
+
+    Spectrum spectrumRight(fftSize, 2, 0.1, 1.5);
+    spectrumRight.setWindowSize(g_windowWidth, g_windowHeight);
+    Scope scopeRight(spectrumRight.getNumPlotPoints(), colorFromHex(0x8abeb7, 0.8), 8.0);
 
     Spectrum spectrum2(fftSize, 2, 3, 5);
     spectrum2.setWindowSize(g_windowWidth, g_windowHeight);
     Scope scope2(spectrum2.getNumPlotPoints(), colorFromHex(0x3c3d3b), 8.0);
 
-    FFTAudioCallback callback(fftSize);
+    FFTAudioCallback callback(2, fftSize);
 
     PortAudioBackend audioBackend(&callback, device);
     audioBackend.run();
@@ -101,13 +105,17 @@ int main(int argc, char** argv)
         glClearColor(color[0], color[1], color[2], color[3]);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        spectrum2.update(callback.getMagnitudeSpectrum());
+        spectrum2.update(callback.getMagnitudeSpectrum(0));
         scope2.plotFilled(spectrum2.getPlotX(), spectrum2.getPlotY());
         scope2.render();
 
-        spectrum.update(callback.getMagnitudeSpectrum());
-        scope.plot(spectrum.getPlotX(), spectrum.getPlotY(), spectrum.getPlotNormal());
-        scope.render();
+        spectrumLeft.update(callback.getMagnitudeSpectrum(0));
+        scopeLeft.plot(spectrumLeft.getPlotX(), spectrumLeft.getPlotY(), spectrumLeft.getPlotNormal());
+        scopeLeft.render();
+
+        spectrumRight.update(callback.getMagnitudeSpectrum(1));
+        scopeRight.plot(spectrumRight.getPlotX(), spectrumRight.getPlotY(), spectrumRight.getPlotNormal());
+        scopeRight.render();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
