@@ -1,13 +1,18 @@
 #include "main.hpp"
 
-static std::array<float, 4> colorFromHex(int string)
+static std::array<float, 4> colorFromHex(int string, float alpha)
 {
     return {{
         (string >> (4 * 4) & 0xff) / 255.0f,
         (string >> (2 * 4) & 0xff) / 255.0f,
         (string & 0xff) / 255.0f,
-        1.0f
+        alpha
     }};
+}
+
+static std::array<float, 4> colorFromHex(int string)
+{
+    return colorFromHex(string, 1.0f);
 }
 
 volatile int g_windowWidth = 640;
@@ -40,6 +45,9 @@ GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle) {
     if (!glCreateShader) {
         throw std::runtime_error("Unsuccessful GLEW initialization.");
     }
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
 
     return window;
 }
