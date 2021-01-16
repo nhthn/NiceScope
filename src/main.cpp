@@ -109,15 +109,15 @@ int main(int argc, char** argv)
         glClearColor(color[0], color[1], color[2], color[3]);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        spectrum2.update(callback.getMagnitudeSpectrum(0));
+        spectrum2.update(fftLeft.getMagnitudeSpectrum());
         scope2.plotFilled(spectrum2.getPlotX(), spectrum2.getPlotY());
         scope2.render();
 
-        spectrumLeft.update(callback.getMagnitudeSpectrum(0));
+        spectrumLeft.update(fftLeft.getMagnitudeSpectrum());
         scopeLeft.plot(spectrumLeft.getPlotX(), spectrumLeft.getPlotY(), spectrumLeft.getPlotNormal());
         scopeLeft.render();
 
-        spectrumRight.update(callback.getMagnitudeSpectrum(1));
+        spectrumRight.update(fftRight.getMagnitudeSpectrum());
         scopeRight.plot(spectrumRight.getPlotX(), spectrumRight.getPlotY(), spectrumRight.getPlotNormal());
         scopeRight.render();
 

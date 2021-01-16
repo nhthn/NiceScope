@@ -5,13 +5,6 @@ FFTAudioCallback::FFTAudioCallback(int numChannels, int fftSize)
 {
 }
 
-FFTAudioCallback::~FFTAudioCallback()
-{
-    for (int i = 0; i < m_numChannels; i++) {
-        delete m_ffts[i];
-    }
-}
-
 void FFTAudioCallback::addFFT(FFT* fft) {
     m_ffts.push_back(fft);
 }
