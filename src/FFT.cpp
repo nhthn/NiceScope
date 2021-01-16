@@ -6,7 +6,7 @@ FFTAudioCallback::FFTAudioCallback(int numChannels, int fftSize)
     for (int i = 0; i < m_numChannels; i++) {
         // Really dislike this, but I couldn't find the right way to do this with
         // smart pointers.
-        FFT* fft = new FFT(fftSize);
+        FFT* fft = new FFT(fftSize, i);
         m_ffts.push_back(fft);
     }
 }
@@ -20,14 +20,15 @@ FFTAudioCallback::~FFTAudioCallback()
 
 void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
 {
-    for (int i = 0; i < m_numChannels; i++) {
-        m_ffts[i]->process(input_buffer, output_buffer, frame_count, i);
+    for (auto fft : m_ffts) {
+        fft->process(input_buffer, output_buffer, frame_count);
     }
 }
 
-FFT::FFT(int fftSize)
+FFT::FFT(int fftSize, int channel)
     : m_bufferSize(fftSize)
     , m_spectrumSize(m_bufferSize / 2 + 1)
+    , m_channel(channel)
 {
     m_writePos = 0;
 
@@ -86,10 +87,10 @@ void FFT::doFFT()
     }
 }
 
-void FFT::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count, int channel)
+void FFT::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
 {
     for (int i = 0; i < frame_count; i++) {
-        m_samples[m_writePos] = input_buffer[channel][i] * m_window[m_writePos];
+        m_samples[m_writePos] = input_buffer[m_channel][i] * m_window[m_writePos];
         m_writePos += 1;
         if (m_writePos == m_bufferSize) {
             doFFT();

@@ -12,15 +12,16 @@ extern std::mutex g_magnitudeSpectrumMutex;
 
 class FFT {
 public:
-    FFT(int fftSize);
+    FFT(int fftSize, int m_channel);
     ~FFT();
-    void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count, int channel);
+    void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count);
     int getBufferSize() { return m_bufferSize; }
     int getSpectrumSize() { return m_spectrumSize; }
 
     std::vector<float>& getMagnitudeSpectrum() { return m_magnitudeSpectrum; }
 
 private:
+    const int m_channel;
     const int m_bufferSize;
     const int m_spectrumSize;
     int m_writePos;
