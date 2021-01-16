@@ -13,7 +13,7 @@ public:
 
 class PortAudioBackend {
 public:
-    PortAudioBackend(AudioCallback* callback, std::string device);
+    PortAudioBackend(AudioCallback* callback, std::string device, int numChannels);
 
     void run();
     void end();
@@ -26,6 +26,7 @@ public:
 private:
     AudioCallback* m_callback;
     PaStream* m_stream;
+    const int m_numChannels;
     const float m_sample_rate = 48000.0f;
     const int m_block_size = 256;
     PaSampleFormat sample_format;

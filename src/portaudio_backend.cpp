@@ -1,10 +1,11 @@
 #include "portaudio_backend.hpp"
 
 
-PortAudioBackend::PortAudioBackend(AudioCallback* callback, std::string device)
+PortAudioBackend::PortAudioBackend(AudioCallback* callback, std::string device, int numChannels)
     : m_callback(callback)
     , sample_format(paFloat32 | paNonInterleaved)
     , m_device(device)
+    , m_numChannels(numChannels)
 {
 }
 
@@ -15,7 +16,7 @@ void PortAudioBackend::run() {
 
     input_parameters = {
         .device = device,
-        .channelCount = 2,
+        .channelCount = m_numChannels,
         .sampleFormat = sample_format,
         .suggestedLatency = 0.0,
         .hostApiSpecificStreamInfo = nullptr

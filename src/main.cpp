@@ -96,7 +96,7 @@ int main(int argc, char** argv)
 
     FFTAudioCallback callback(2, fftSize);
 
-    PortAudioBackend audioBackend(&callback, device);
+    PortAudioBackend audioBackend(&callback, device, 2);
     audioBackend.run();
 
     std::array<float, 4> color = colorFromHex(0x1d1f21);
