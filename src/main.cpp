@@ -93,7 +93,12 @@ int main(int argc, char** argv)
     spectrum2.setWindowSize(g_windowWidth, g_windowHeight);
     Scope scope2(spectrum2.getNumPlotPoints(), colorFromHex(0x3c3d3b), 8.0);
 
+    FFT fftLeft(fftSize, 0);
+    FFT fftRight(fftSize, 1);
+
     FFTAudioCallback callback(2, fftSize);
+    callback.addFFT(&fftLeft);
+    callback.addFFT(&fftRight);
 
     PortAudioBackend audioBackend(&callback, device, 2);
     audioBackend.run();

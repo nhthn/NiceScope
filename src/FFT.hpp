@@ -40,6 +40,8 @@ public:
     ~FFTAudioCallback();
     void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) override;
 
+    void addFFT(FFT* fft);
+
     std::vector<float>& getMagnitudeSpectrum(int channel) { return m_ffts[channel]->getMagnitudeSpectrum(); }
 
 private:
