@@ -7,7 +7,7 @@ FFTAudioCallback::FFTAudioCallback(int numChannels, int fftSize)
         // Really dislike this, but I couldn't find the right way to do this with
         // smart pointers.
         FFT* fft = new FFT(fftSize, i);
-        m_ffts.push_back(fft);
+        addFFT(fft);
     }
 }
 
@@ -16,6 +16,10 @@ FFTAudioCallback::~FFTAudioCallback()
     for (int i = 0; i < m_numChannels; i++) {
         delete m_ffts[i];
     }
+}
+
+void FFTAudioCallback::addFFT(FFT* fft) {
+    m_ffts.push_back(fft);
 }
 
 void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
