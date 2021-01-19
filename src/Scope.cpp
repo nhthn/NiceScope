@@ -1,19 +1,18 @@
 #include "Scope.hpp"
 
-const char* k_vertexShaderSource = ("#version 130\n"
-                                    "in vec2 pos;\n"
+const char* k_vertexShaderSource = ("#version 120\n"
+                                    "attribute vec2 pos;\n"
                                     "void main()\n"
                                     "{\n"
                                     "    gl_Position = vec4(pos, 1, 1);\n"
                                     "}\n");
 
-const char* k_fragmentShaderSource = ("#version 130\n"
+const char* k_fragmentShaderSource = ("#version 120\n"
                                       "uniform vec2 windowSize;\n"
                                       "uniform vec4 color;\n"
-                                      "out vec4 fragColor;\n"
                                       "void main()\n"
                                       "{\n"
-                                      "fragColor = color;\n"
+                                      "gl_FragColor = color;\n"
                                       "}\n");
 
 Scope::Scope(
