@@ -97,8 +97,6 @@ int main(int argc, char** argv)
     FFT fftRight(fftSize, 1);
 
     FFTAudioCallback callback(2, fftSize);
-    callback.addFFT(&fftLeft);
-    callback.addFFT(&fftRight);
 
     PortAudioBackend audioBackend(&callback, device, 2);
     audioBackend.run();
@@ -108,6 +106,10 @@ int main(int argc, char** argv)
     while (!glfwWindowShouldClose(window)) {
         glClearColor(color[0], color[1], color[2], color[3]);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        callback.bufferSamples();
+        fftLeft.update(callback.getOutputBuffer());
+        fftRight.update(callback.getOutputBuffer());
 
         spectrum2.update(fftLeft.getMagnitudeSpectrum());
         scope2.plotFilled(spectrum2.getPlotX(), spectrum2.getPlotY());

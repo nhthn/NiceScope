@@ -2,9 +2,15 @@ cmake_minimum_required(VERSION 3.19)
 
 project(NiceScope)
 
-file(GLOB nicescope_files src/*.cpp)
+add_subdirectory(third_party/portaudio)
+include_directories(
+    third_party/portaudio/include/
+    third_party/portaudio/src/common/
+)
 
+file(GLOB nicescope_files src/*.cpp)
 add_executable(NiceScope ${nicescope_files})
+
 
 target_link_libraries(
     NiceScope
@@ -12,6 +18,6 @@ target_link_libraries(
     GLU
     GLEW
     glfw
-    portaudio
+    portaudio_static
     fftw3
 )

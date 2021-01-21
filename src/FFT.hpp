@@ -6,6 +6,8 @@
 
 #include <fftw3.h>
 
+#include "pa_ringbuffer.h"
+
 #include "portaudio_backend.hpp"
 
 extern std::mutex g_magnitudeSpectrumMutex;
@@ -20,9 +22,10 @@ public:
     FFT(const FFT&& other) = delete;
     FFT& operator=(const FFT&& other) = delete;
 
-    void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count);
     int getBufferSize() { return m_bufferSize; }
     int getSpectrumSize() { return m_spectrumSize; }
+
+    void update(float* buffer);
 
     std::vector<float>& getMagnitudeSpectrum() { return m_magnitudeSpectrum; }
 
@@ -45,9 +48,15 @@ public:
     FFTAudioCallback(int numChannels, int fftSize);
     void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) override;
 
-    void addFFT(FFT* fft);
+    bool bufferSamples();
+    float* getOutputBuffer() { return m_outputBuffer; };
 
 private:
     const int m_numChannels;
-    std::vector<FFT*> m_ffts;
+
+    int m_ringBufferSize = 4096;
+    int m_outputBufferSize = 2048;
+    std::unique_ptr<float[]> m_buffer;
+    std::unique_ptr<PaUtilRingBuffer> m_ringBuffer;
+    float* m_outputBuffer;
 };

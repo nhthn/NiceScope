@@ -2,18 +2,36 @@
 
 FFTAudioCallback::FFTAudioCallback(int numChannels, int fftSize)
     : m_numChannels(numChannels)
+    , m_ringBuffer(new PaUtilRingBuffer)
+    , m_buffer(new float[m_ringBufferSize])
+    , m_outputBuffer(new float[m_outputBufferSize])
 {
-}
-
-void FFTAudioCallback::addFFT(FFT* fft) {
-    m_ffts.push_back(fft);
+    ring_buffer_size_t size = PaUtil_InitializeRingBuffer(
+        m_ringBuffer.get(), sizeof(float), m_ringBufferSize, m_buffer.get()
+    );
+    if (size < 0) {
+        throw std::runtime_error("Ring buffer initialization failed.");
+    }
 }
 
 void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
 {
-    for (auto fft : m_ffts) {
-        fft->process(input_buffer, output_buffer, frame_count);
+    auto writeAvailable = PaUtil_GetRingBufferWriteAvailable(m_ringBuffer.get());
+    if (frame_count > writeAvailable) {
+        PaUtil_AdvanceRingBufferReadIndex(m_ringBuffer.get(), frame_count);
     }
+    PaUtil_WriteRingBuffer(m_ringBuffer.get(), input_buffer[0], frame_count);
+}
+
+bool FFTAudioCallback::bufferSamples()
+{
+    int availableFrames = PaUtil_GetRingBufferReadAvailable(m_ringBuffer.get());
+    int readSamples = std::min(availableFrames, m_outputBufferSize);
+    int samplesRead = PaUtil_ReadRingBuffer(m_ringBuffer.get(), m_outputBuffer, readSamples);
+    if (samplesRead < m_outputBufferSize) {
+        return false;
+    }
+    return true;
 }
 
 FFT::FFT(int fftSize, int channel)
@@ -50,42 +68,31 @@ FFT::~FFT()
     fftw_free(m_complexSpectrum);
 }
 
-void FFT::doFFT()
+void FFT::update(float* buffer)
 {
+    for (int i = 0; i < m_bufferSize; i++) {
+        m_samples[i] = buffer[i];
+    }
+
     fftw_execute(m_fftwPlan);
 
-    {
-        const std::lock_guard<std::mutex> lock(g_magnitudeSpectrumMutex);
-        float maxDb;
-        for (int i = 0; i < m_spectrumSize; i++) {
-            float real = m_complexSpectrum[i][0];
-            float imag = m_complexSpectrum[i][1];
-            float magnitude = std::hypot(real, imag);
-            float db = 20 * std::log10(magnitude);
-            if (db > maxDb) {
-                maxDb = db;
-            }
-            m_magnitudeSpectrum[i] = db;
+    float maxDb;
+    for (int i = 0; i < m_spectrumSize; i++) {
+        float real = m_complexSpectrum[i][0];
+        float imag = m_complexSpectrum[i][1];
+        float magnitude = std::hypot(real, imag);
+        float db = 20 * std::log10(magnitude);
+        if (db > maxDb) {
+            maxDb = db;
         }
-
-        if (maxDb > m_maxDb) {
-            m_maxDb = maxDb;
-        }
-
-        for (int i = 0; i < m_spectrumSize; i++) {
-            m_magnitudeSpectrum[i] = (m_magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
-        }
+        m_magnitudeSpectrum[i] = db;
     }
-}
 
-void FFT::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
-{
-    for (int i = 0; i < frame_count; i++) {
-        m_samples[m_writePos] = input_buffer[m_channel][i] * m_window[m_writePos];
-        m_writePos += 1;
-        if (m_writePos == m_bufferSize) {
-            doFFT();
-            m_writePos = 0;
-        }
+    if (maxDb > m_maxDb) {
+        m_maxDb = maxDb;
+    }
+
+    for (int i = 0; i < m_spectrumSize; i++) {
+        m_magnitudeSpectrum[i] = (m_magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
     }
 }
