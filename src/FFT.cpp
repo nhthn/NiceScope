@@ -108,14 +108,14 @@ void FFT::doFFT()
     }
 }
 
-void FFT::process(std::shared_ptr<float[]> buffer, int numChannels, int bufferSize, int writePos)
+void FFT::process(Ingress& ingress)
 {
     for (int i = 0; i < m_bufferSize; i++) {
-        int index = writePos + (-m_bufferSize + i) * numChannels + m_channel;
+        int index = ingress.getWritePos() + (-m_bufferSize + i) * ingress.getNumChannels() + m_channel;
         if (index < 0) {
-            index += bufferSize;
+            index += ingress.getBufferSize();
         }
-        m_samples[i] = buffer.get()[index] * m_window[i];
+        m_samples[i] = ingress.getOutputBuffer().get()[index] * m_window[i];
     }
     doFFT();
 }
