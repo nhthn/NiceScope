@@ -75,6 +75,10 @@ FFT::~FFT()
 
 void FFT::doFFT()
 {
+    for (int i = 0; i < m_bufferSize; i++) {
+        m_samples[i] = static_cast<float>(std::rand()) / RAND_MAX;
+    }
+
     fftw_execute(m_fftwPlan);
 
     float maxDb;
@@ -100,14 +104,5 @@ void FFT::doFFT()
 
 void FFT::process(std::shared_ptr<float[]> buffer, int bufferSize, int writePos)
 {
-    {
-        float* theBuffer = buffer.get();
-        for (int i = 0; i < m_bufferSize; i++) {
-            m_samples[i] = (
-                theBuffer[(writePos - i + bufferSize) % bufferSize]
-                * m_window[i]
-            );
-        }
-    }
     doFFT();
 }
