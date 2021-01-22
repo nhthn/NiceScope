@@ -39,9 +39,9 @@ private:
     std::vector<float> m_magnitudeSpectrum;
 };
 
-class FFTAudioCallback : public AudioCallback {
+class Ingress : public AudioCallback {
 public:
-    FFTAudioCallback(int numChannels, int fftSize);
+    Ingress(int numChannels, int fftSize);
     void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) override;
 
     void bufferSamples();

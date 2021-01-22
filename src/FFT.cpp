@@ -1,6 +1,6 @@
 #include "FFT.hpp"
 
-FFTAudioCallback::FFTAudioCallback(int numChannels, int fftSize)
+Ingress::Ingress(int numChannels, int fftSize)
     : m_numChannels(numChannels)
     , m_ringBuffer(new PaUtilRingBuffer)
     , m_ringBufferData(new float[m_ringBufferSize * m_numChannels])
@@ -25,7 +25,7 @@ FFTAudioCallback::FFTAudioCallback(int numChannels, int fftSize)
     }
 }
 
-void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
+void Ingress::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
 {
     auto writeAvailable = PaUtil_GetRingBufferWriteAvailable(m_ringBuffer.get());
     if (frame_count > writeAvailable) {
@@ -34,7 +34,7 @@ void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buf
     PaUtil_WriteRingBuffer(m_ringBuffer.get(), input_buffer, frame_count);
 }
 
-void FFTAudioCallback::bufferSamples()
+void Ingress::bufferSamples()
 {
     int availableFrames = PaUtil_GetRingBufferReadAvailable(m_ringBuffer.get());
     int readSamples = std::min(availableFrames, m_scratchBufferSize);

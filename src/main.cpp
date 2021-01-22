@@ -96,7 +96,7 @@ int main(int argc, char** argv)
     FFT fftLeft(fftSize, 0);
     FFT fftRight(fftSize, 1);
 
-    FFTAudioCallback callback(2, fftSize);
+    Ingress callback(2, fftSize);
 
     PortAudioBackend audioBackend(&callback, device, 2);
     audioBackend.run();
