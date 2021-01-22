@@ -77,7 +77,7 @@ void FFT::doFFT()
 {
     fftw_execute(m_fftwPlan);
 
-    float maxDb;
+    float maxDb = 0;
     for (int i = 0; i < m_spectrumSize; i++) {
         float real = m_complexSpectrum[i][0];
         float imag = m_complexSpectrum[i][1];
