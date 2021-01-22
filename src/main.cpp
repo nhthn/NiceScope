@@ -108,8 +108,9 @@ int main(int argc, char** argv)
         glClear(GL_COLOR_BUFFER_BIT);
 
         callback.bufferSamples();
-        fftLeft.update(callback.getOutputBuffer());
-        fftRight.update(callback.getOutputBuffer());
+
+        fftLeft.process(callback.getOutputBuffer(), callback.getBufferSize(), callback.getWritePos());
+        fftRight.process(callback.getOutputBuffer(), callback.getBufferSize(), callback.getWritePos());
 
         spectrum2.update(fftLeft.getMagnitudeSpectrum());
         scope2.plotFilled(spectrum2.getPlotX(), spectrum2.getPlotY());

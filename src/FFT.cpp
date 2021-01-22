@@ -3,11 +3,12 @@
 FFTAudioCallback::FFTAudioCallback(int numChannels, int fftSize)
     : m_numChannels(numChannels)
     , m_ringBuffer(new PaUtilRingBuffer)
-    , m_buffer(new float[m_ringBufferSize])
+    , m_ringBufferData(new float[m_ringBufferSize])
+    , m_scratchBuffer(new float[m_scratchBufferSize])
     , m_outputBuffer(new float[m_outputBufferSize])
 {
     ring_buffer_size_t size = PaUtil_InitializeRingBuffer(
-        m_ringBuffer.get(), sizeof(float), m_ringBufferSize, m_buffer.get()
+        m_ringBuffer.get(), sizeof(float), m_ringBufferSize, m_ringBufferData.get()
     );
     if (size < 0) {
         throw std::runtime_error("Ring buffer initialization failed.");
@@ -23,15 +24,20 @@ void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buf
     PaUtil_WriteRingBuffer(m_ringBuffer.get(), input_buffer[0], frame_count);
 }
 
-bool FFTAudioCallback::bufferSamples()
+void FFTAudioCallback::bufferSamples()
 {
     int availableFrames = PaUtil_GetRingBufferReadAvailable(m_ringBuffer.get());
-    int readSamples = std::min(availableFrames, m_outputBufferSize);
-    int samplesRead = PaUtil_ReadRingBuffer(m_ringBuffer.get(), m_outputBuffer, readSamples);
-    if (samplesRead < m_outputBufferSize) {
-        return false;
+    int readSamples = std::min(availableFrames, m_scratchBufferSize);
+    int frameCount = PaUtil_ReadRingBuffer(m_ringBuffer.get(), m_scratchBuffer.get(), readSamples);
+
+    for (int i = 0; i < frameCount; i++) {
+        m_outputBuffer.get()[m_writePos] = m_scratchBuffer.get()[i];
+
+        m_writePos += 1;
+        if (m_writePos == m_outputBufferSize) {
+            m_writePos = 0;
+        }
     }
-    return true;
 }
 
 FFT::FFT(int fftSize, int channel)
@@ -39,7 +45,6 @@ FFT::FFT(int fftSize, int channel)
     , m_spectrumSize(m_bufferSize / 2 + 1)
     , m_channel(channel)
 {
-    m_writePos = 0;
 
     m_samples = static_cast<double*>(fftw_malloc(sizeof(double) * m_bufferSize));
     for (int i = 0; i < m_bufferSize; i++) {
@@ -68,12 +73,8 @@ FFT::~FFT()
     fftw_free(m_complexSpectrum);
 }
 
-void FFT::update(float* buffer)
+void FFT::doFFT()
 {
-    for (int i = 0; i < m_bufferSize; i++) {
-        m_samples[i] = buffer[i];
-    }
-
     fftw_execute(m_fftwPlan);
 
     float maxDb;
@@ -95,4 +96,18 @@ void FFT::update(float* buffer)
     for (int i = 0; i < m_spectrumSize; i++) {
         m_magnitudeSpectrum[i] = (m_magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
     }
+}
+
+void FFT::process(std::shared_ptr<float[]> buffer, int bufferSize, int writePos)
+{
+    {
+        float* theBuffer = buffer.get();
+        for (int i = 0; i < m_bufferSize; i++) {
+            m_samples[i] = (
+                theBuffer[(writePos - i + bufferSize) % bufferSize]
+                * m_window[i]
+            );
+        }
+    }
+    doFFT();
 }
