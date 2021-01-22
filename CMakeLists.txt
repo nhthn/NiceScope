@@ -21,3 +21,7 @@ target_link_libraries(
     portaudio_static
     fftw3
 )
+
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wpedantic")
+endif()

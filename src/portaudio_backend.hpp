@@ -24,15 +24,15 @@ public:
 
 private:
     AudioCallback* m_callback;
-    PaStream* m_stream;
+    std::string m_device;
     const int m_numChannels;
+    PaSampleFormat sample_format;
+    PaStream* m_stream;
     const float m_sample_rate = 48000.0f;
     const int m_block_size = 256;
-    PaSampleFormat sample_format;
     PaStreamParameters input_parameters;
     PaStreamParameters output_parameters;
 
-    std::string m_device;
 
     void handle_error(PaError error);
     int find_device();

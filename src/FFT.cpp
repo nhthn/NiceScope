@@ -41,9 +41,9 @@ void FFTAudioCallback::bufferSamples()
 }
 
 FFT::FFT(int fftSize, int channel)
-    : m_bufferSize(fftSize)
+    : m_channel(channel)
+    , m_bufferSize(fftSize)
     , m_spectrumSize(m_bufferSize / 2 + 1)
-    , m_channel(channel)
 {
 
     m_samples = static_cast<double*>(fftw_malloc(sizeof(double) * m_bufferSize));

@@ -26,8 +26,8 @@ Spectrum::Spectrum(
     float plotPointPadding,
     float attack,
     float release)
-    : m_spectrumSize(fftSize / 2 + 1)
-    , m_fftSize(fftSize)
+    : m_fftSize(fftSize)
+    , m_spectrumSize(fftSize / 2 + 1)
     , m_numChunks(0)
     , m_numPlotPoints(0)
     , m_plotPointPadding(plotPointPadding)
@@ -51,11 +51,6 @@ float Spectrum::fftBinToFrequency(int fftBin)
     return 24000 * static_cast<float>(fftBin) / m_spectrumSize;
 }
 
-static float erbs(float frequency)
-{
-    return 21.4 * std::log10(0.00437f * frequency + 1);
-}
-
 float Spectrum::position(float frequency)
 {
     return (std::log2(frequency) - std::log2(50)) / (std::log2(20e3) - std::log2(50));
@@ -71,7 +66,6 @@ void Spectrum::setWindowSize(int windowWidth, int windowHeight)
     bool foundMultiChunk = false;
     int firstMultiChunk;
     int firstMultiChunkOffset;
-    float firstMultiChunkPosition;
     int chunkIndex;
 
     int lastNominalChunk = -1;
@@ -99,7 +93,6 @@ void Spectrum::setWindowSize(int windowWidth, int windowHeight)
                 foundMultiChunk = true;
                 firstMultiChunk = i;
                 firstMultiChunkOffset = nominalChunk;
-                firstMultiChunkPosition = thePosition;
             }
         }
         lastNominalChunk = nominalChunk;
@@ -140,7 +133,7 @@ void Spectrum::update(std::vector<float>& magnitudeSpectrum)
         const std::lock_guard<std::mutex> lock(g_magnitudeSpectrumMutex);
         for (int i = 0; i < m_spectrumSize; i++) {
             int chunk = m_binToChunk[i];
-            if (chunk < 0 || chunk >= m_chunkY.size()) {
+            if (chunk < 0 || chunk >= static_cast<int>(m_chunkY.size())) {
                 break;
             }
             m_chunkY[chunk] = std::max(m_chunkY[chunk], magnitudeSpectrum[i]);

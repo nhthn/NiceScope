@@ -2,9 +2,9 @@
 
 PortAudioBackend::PortAudioBackend(AudioCallback* callback, std::string device, int numChannels)
     : m_callback(callback)
-    , sample_format(paFloat32 | paNonInterleaved)
     , m_device(device)
     , m_numChannels(numChannels)
+    , sample_format(paFloat32 | paNonInterleaved)
 {
 }
 
@@ -14,13 +14,11 @@ void PortAudioBackend::run()
 
     int device = find_device();
 
-    input_parameters = {
-        .device = device,
-        .channelCount = m_numChannels,
-        .sampleFormat = sample_format,
-        .suggestedLatency = 0.0,
-        .hostApiSpecificStreamInfo = nullptr
-    };
+    input_parameters.device = device;
+    input_parameters.channelCount = m_numChannels;
+    input_parameters.sampleFormat = sample_format;
+    input_parameters.suggestedLatency = 0.0;
+    input_parameters.hostApiSpecificStreamInfo = nullptr;
 
     PaStreamFlags stream_flags = paNoFlag;
     void* user_data = this;
