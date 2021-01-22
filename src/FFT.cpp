@@ -100,14 +100,11 @@ void FFT::doFFT()
 
 void FFT::process(std::shared_ptr<float[]> buffer, int bufferSize, int writePos)
 {
-    {
-        float* theBuffer = buffer.get();
-        for (int i = 0; i < m_bufferSize; i++) {
-            m_samples[i] = (
-                theBuffer[(writePos - i + bufferSize) % bufferSize]
-                * m_window[i]
-            );
-        }
+    for (int i = 0; i < m_bufferSize; i++) {
+        m_samples[i] = (
+            buffer.get()[(writePos - i + bufferSize) % bufferSize]
+            * m_window[i]
+        );
     }
     doFFT();
 }
