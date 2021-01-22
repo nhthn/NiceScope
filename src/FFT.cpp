@@ -13,6 +13,16 @@ FFTAudioCallback::FFTAudioCallback(int numChannels, int fftSize)
     if (size < 0) {
         throw std::runtime_error("Ring buffer initialization failed.");
     }
+
+    for (int i = 0; i < m_ringBufferSize; i++) {
+        m_ringBufferData[i] = 0;
+    }
+    for (int i = 0; i < m_scratchBufferSize; i++) {
+        m_scratchBuffer[i] = 0;
+    }
+    for (int i = 0; i < m_outputBufferSize; i++) {
+        m_outputBuffer[i] = 0;
+    }
 }
 
 void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count)
@@ -101,10 +111,11 @@ void FFT::doFFT()
 void FFT::process(std::shared_ptr<float[]> buffer, int bufferSize, int writePos)
 {
     for (int i = 0; i < m_bufferSize; i++) {
-        m_samples[i] = (
-            buffer.get()[(writePos - i + bufferSize) % bufferSize]
-            * m_window[i]
-        );
+        int index = writePos - m_bufferSize + i;
+        if (index < 0) {
+            index += bufferSize;
+        }
+        m_samples[i] = buffer.get()[index] * m_window[i];
     }
     doFFT();
 }
