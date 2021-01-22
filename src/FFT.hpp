@@ -22,7 +22,7 @@ public:
     int getBufferSize() { return m_bufferSize; }
     int getSpectrumSize() { return m_spectrumSize; }
 
-    void process(std::shared_ptr<float[]> buffer, int bufferSize, int writePos);
+    void process(std::shared_ptr<float[]> buffer, int numChannels, int bufferSize, int writePos);
 
     std::vector<float>& getMagnitudeSpectrum() { return m_magnitudeSpectrum; }
 
@@ -46,6 +46,7 @@ public:
 
     void bufferSamples();
     std::shared_ptr<float[]> getOutputBuffer() { return m_outputBuffer; };
+    int getNumChannels() { return m_numChannels; };
     int getBufferSize() { return m_outputBufferSize; };
     int getWritePos() { return m_writePos; };
 

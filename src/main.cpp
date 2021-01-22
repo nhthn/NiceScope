@@ -109,8 +109,8 @@ int main(int argc, char** argv)
 
         callback.bufferSamples();
 
-        fftLeft.process(callback.getOutputBuffer(), callback.getBufferSize(), callback.getWritePos());
-        fftRight.process(callback.getOutputBuffer(), callback.getBufferSize(), callback.getWritePos());
+        fftLeft.process(callback.getOutputBuffer(), callback.getNumChannels(), callback.getBufferSize(), callback.getWritePos());
+        fftRight.process(callback.getOutputBuffer(), callback.getNumChannels(), callback.getBufferSize(), callback.getWritePos());
 
         spectrum2.update(fftLeft.getMagnitudeSpectrum());
         scope2.plotFilled(spectrum2.getPlotX(), spectrum2.getPlotY());

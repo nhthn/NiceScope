@@ -3,12 +3,12 @@
 #include <iostream>
 #include <string>
 
-typedef float* const* InputBuffer;
-typedef float** OutputBuffer;
+typedef const float* InputBuffer;
+typedef float* OutputBuffer;
 
 class AudioCallback {
 public:
-    virtual void process(float* const* input_buffer, float** output_buffer, int frame_count) = 0;
+    virtual void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) = 0;
 };
 
 class PortAudioBackend {

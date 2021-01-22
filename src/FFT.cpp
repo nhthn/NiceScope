@@ -3,24 +3,24 @@
 FFTAudioCallback::FFTAudioCallback(int numChannels, int fftSize)
     : m_numChannels(numChannels)
     , m_ringBuffer(new PaUtilRingBuffer)
-    , m_ringBufferData(new float[m_ringBufferSize])
-    , m_scratchBuffer(new float[m_scratchBufferSize])
-    , m_outputBuffer(new float[m_outputBufferSize])
+    , m_ringBufferData(new float[m_ringBufferSize * m_numChannels])
+    , m_scratchBuffer(new float[m_scratchBufferSize * m_numChannels])
+    , m_outputBuffer(new float[m_outputBufferSize * m_numChannels])
 {
     ring_buffer_size_t size = PaUtil_InitializeRingBuffer(
-        m_ringBuffer.get(), sizeof(float), m_ringBufferSize, m_ringBufferData.get()
+        m_ringBuffer.get(), sizeof(float) * m_numChannels, m_ringBufferSize, m_ringBufferData.get()
     );
     if (size < 0) {
         throw std::runtime_error("Ring buffer initialization failed.");
     }
 
-    for (int i = 0; i < m_ringBufferSize; i++) {
+    for (int i = 0; i < m_ringBufferSize * m_numChannels; i++) {
         m_ringBufferData[i] = 0;
     }
-    for (int i = 0; i < m_scratchBufferSize; i++) {
+    for (int i = 0; i < m_scratchBufferSize * m_numChannels; i++) {
         m_scratchBuffer[i] = 0;
     }
-    for (int i = 0; i < m_outputBufferSize; i++) {
+    for (int i = 0; i < m_outputBufferSize * m_numChannels; i++) {
         m_outputBuffer[i] = 0;
     }
 }
@@ -31,7 +31,7 @@ void FFTAudioCallback::process(InputBuffer input_buffer, OutputBuffer output_buf
     if (frame_count > writeAvailable) {
         PaUtil_AdvanceRingBufferReadIndex(m_ringBuffer.get(), frame_count);
     }
-    PaUtil_WriteRingBuffer(m_ringBuffer.get(), input_buffer[0], frame_count);
+    PaUtil_WriteRingBuffer(m_ringBuffer.get(), input_buffer, frame_count);
 }
 
 void FFTAudioCallback::bufferSamples()
@@ -40,7 +40,7 @@ void FFTAudioCallback::bufferSamples()
     int readSamples = std::min(availableFrames, m_scratchBufferSize);
     int frameCount = PaUtil_ReadRingBuffer(m_ringBuffer.get(), m_scratchBuffer.get(), readSamples);
 
-    for (int i = 0; i < frameCount; i++) {
+    for (int i = 0; i < frameCount * m_numChannels; i++) {
         m_outputBuffer.get()[m_writePos] = m_scratchBuffer.get()[i];
 
         m_writePos += 1;
@@ -108,10 +108,10 @@ void FFT::doFFT()
     }
 }
 
-void FFT::process(std::shared_ptr<float[]> buffer, int bufferSize, int writePos)
+void FFT::process(std::shared_ptr<float[]> buffer, int numChannels, int bufferSize, int writePos)
 {
     for (int i = 0; i < m_bufferSize; i++) {
-        int index = writePos - m_bufferSize + i;
+        int index = writePos + (-m_bufferSize + i) * numChannels + m_channel;
         if (index < 0) {
             index += bufferSize;
         }

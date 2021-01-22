@@ -4,7 +4,7 @@ PortAudioBackend::PortAudioBackend(AudioCallback* callback, std::string device, 
     : m_callback(callback)
     , m_device(device)
     , m_numChannels(numChannels)
-    , sample_format(paFloat32 | paNonInterleaved)
+    , sample_format(paFloat32)
 {
 }
 
