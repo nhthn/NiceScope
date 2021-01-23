@@ -22,17 +22,17 @@ public:
 
 private:
     const int m_numChannels;
+    const int m_ringBufferSize;
+    const int m_scratchBufferSize;
+    const int m_outputBufferSize;
 
     int m_writePos = 0;
 
-    int m_ringBufferSize = 4096;
     std::unique_ptr<PaUtilRingBuffer> m_ringBuffer;
     std::unique_ptr<float[]> m_ringBufferData;
 
-    int m_scratchBufferSize = 4096;
     std::unique_ptr<float[]> m_scratchBuffer;
 
-    int m_outputBufferSize = 4096;
     std::shared_ptr<float[]> m_outputBuffer;
 };
 

@@ -2,6 +2,9 @@
 
 Ingress::Ingress(int numChannels, int fftSize)
     : m_numChannels(numChannels)
+    , m_ringBufferSize(fftSize * m_numChannels)
+    , m_scratchBufferSize(fftSize * m_numChannels)
+    , m_outputBufferSize(fftSize * m_numChannels)
     , m_ringBuffer(new PaUtilRingBuffer)
     , m_ringBufferData(new float[m_ringBufferSize * m_numChannels])
     , m_scratchBuffer(new float[m_scratchBufferSize * m_numChannels])
