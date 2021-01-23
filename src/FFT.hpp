@@ -82,8 +82,12 @@ private:
 
 class RangeComputer {
 public:
-    float getTop() { return 15; };
+    void process(float maximum);
+    float getTop() { return m_top; };
     float getBottom() { return getTop() - 60; };
 
     float convertValueToScreenY(float value);
+
+private:
+    float m_top = 15;
 };

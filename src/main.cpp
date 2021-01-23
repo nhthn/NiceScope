@@ -114,9 +114,9 @@ int main(int argc, char** argv)
 
         fftLeft.process(callback);
         fftRight.process(callback);
-
         spectralMaximum.set(fftLeft.getMagnitudeSpectrum());
         spectralMaximum.computeMaximumWith(fftRight.getMagnitudeSpectrum());
+        rangeComputer.process(spectralMaximum.getMaximum());
 
         spectrum2.update(spectralMaximum.getMagnitudeSpectrum());
         scope2.plotFilled(rangeComputer, spectrum2.getPlotX(), spectrum2.getPlotY());

@@ -144,3 +144,7 @@ float SpectralMaximum::getMaximum()
 float RangeComputer::convertValueToScreenY(float value) {
     return 2 * (value - getBottom()) / (getTop() - getBottom()) - 1;
 }
+
+void RangeComputer::process(float maximum) {
+    m_top = std::max(m_top, maximum);
+}
