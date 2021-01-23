@@ -6,7 +6,7 @@ This is a WIP attempt to create a minimal, beautiful, and configurable scope for
 
 ### Building and running
 
-Obtain dependencies.
+Obtain dependencies. Ensure submodules are up to date (`git submodule init`, `git submodule update`). Then:
 
     mkdir build
     cd build
