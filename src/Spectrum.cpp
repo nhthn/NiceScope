@@ -164,7 +164,8 @@ void Spectrum::update(std::vector<float>& magnitudeSpectrum)
         float x2 = m_chunkX[t2];
         float x3 = m_chunkX[t3];
         m_plotNormal[i] = std::atan2(
-            dCubicInterpolate(t, y0, y1, y2, y3),
+            // FIXME: This 60 is hardcoded and should come from the RangeComputer.
+            dCubicInterpolate(t, y0, y1, y2, y3) / 60,
             dCubicInterpolate(t, x0, x1, x2, x3));
     }
 }
