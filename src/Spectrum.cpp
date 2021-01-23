@@ -126,7 +126,7 @@ void Spectrum::setWindowSize(int windowWidth, int windowHeight)
 void Spectrum::update(std::vector<float>& magnitudeSpectrum)
 {
     for (int i = 0; i < m_numChunks; i++) {
-        m_chunkY[i] = -1;
+        m_chunkY[i] = -1000;
     }
 
     {

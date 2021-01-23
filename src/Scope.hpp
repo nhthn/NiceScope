@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "ShaderProgram.hpp"
+#include "FFT.hpp"
 
 extern volatile int g_windowWidth;
 extern volatile int g_windowHeight;
@@ -21,10 +22,14 @@ public:
     int getNumTriangles() { return m_numTriangles; }
 
     void plot(
+        RangeComputer& rangeComputer,
         std::vector<float>& plotX,
         std::vector<float>& plotY,
         std::vector<float>& plotNormal);
-    void plotFilled(std::vector<float>& plotX, std::vector<float>& plotY);
+    void plotFilled(
+        RangeComputer& rangeComputer,
+        std::vector<float>& plotX,
+        std::vector<float>& plotY);
 
     void render();
 

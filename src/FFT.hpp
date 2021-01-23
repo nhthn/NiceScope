@@ -65,3 +65,25 @@ private:
     std::vector<float> m_window;
     std::vector<float> m_magnitudeSpectrum;
 };
+
+class SpectralMaximum {
+public:
+    SpectralMaximum(int spectrumSize);
+
+    std::vector<float>& getMagnitudeSpectrum() { return m_magnitudeSpectrum; };
+    void set(std::vector<float> spectrum);
+    void computeMaximumWith(std::vector<float> spectrum);
+    float getMaximum();
+
+private:
+    const int m_spectrumSize;
+    std::vector<float> m_magnitudeSpectrum;
+};
+
+class RangeComputer {
+public:
+    float getTop() { return 15; };
+    float getBottom() { return getTop() - 60; };
+
+    float convertValueToScreenY(float value);
+};

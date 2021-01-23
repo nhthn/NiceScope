@@ -61,6 +61,7 @@ Scope::~Scope()
 }
 
 void Scope::plot(
+    RangeComputer& rangeComputer,
     std::vector<float>& plotX,
     std::vector<float>& plotY,
     std::vector<float>& plotNormal)
@@ -69,19 +70,20 @@ void Scope::plot(
         float thicknessX = std::sin(plotNormal[i]) * m_thicknessInPixels / g_windowWidth * 0.5;
         float thicknessY = std::cos(plotNormal[i]) * m_thicknessInPixels / g_windowHeight * 0.5;
         m_coordinates[4 * i + 0] = 2 * plotX[i] - 1 - thicknessX;
-        m_coordinates[4 * i + 1] = 2 * plotY[i] - 1 + thicknessY;
+        m_coordinates[4 * i + 1] = rangeComputer.convertValueToScreenY(plotY[i]) + thicknessY;
         m_coordinates[4 * i + 2] = 2 * plotX[i] - 1 + thicknessX;
-        m_coordinates[4 * i + 3] = 2 * plotY[i] - 1 - thicknessY;
+        m_coordinates[4 * i + 3] = rangeComputer.convertValueToScreenY(plotY[i]) - thicknessY;
     }
 }
 
 void Scope::plotFilled(
+    RangeComputer& rangeComputer,
     std::vector<float>& plotX,
     std::vector<float>& plotY)
 {
     for (int i = 0; i < static_cast<int>(plotY.size()); i++) {
         m_coordinates[4 * i + 0] = 2 * plotX[i] - 1;
-        m_coordinates[4 * i + 1] = 2 * plotY[i] - 1;
+        m_coordinates[4 * i + 1] = rangeComputer.convertValueToScreenY(plotY[i]);
         m_coordinates[4 * i + 2] = 2 * plotX[i] - 1;
         m_coordinates[4 * i + 3] = -1;
     }

@@ -95,6 +95,9 @@ int main(int argc, char** argv)
 
     FFT fftLeft(fftSize, 0);
     FFT fftRight(fftSize, 1);
+    SpectralMaximum spectralMaximum(fftLeft.getSpectrumSize());
+
+    RangeComputer rangeComputer;
 
     Ingress callback(2, fftSize);
 
@@ -112,16 +115,19 @@ int main(int argc, char** argv)
         fftLeft.process(callback);
         fftRight.process(callback);
 
-        spectrum2.update(fftLeft.getMagnitudeSpectrum());
-        scope2.plotFilled(spectrum2.getPlotX(), spectrum2.getPlotY());
+        spectralMaximum.set(fftLeft.getMagnitudeSpectrum());
+        spectralMaximum.computeMaximumWith(fftRight.getMagnitudeSpectrum());
+
+        spectrum2.update(spectralMaximum.getMagnitudeSpectrum());
+        scope2.plotFilled(rangeComputer, spectrum2.getPlotX(), spectrum2.getPlotY());
         scope2.render();
 
         spectrumLeft.update(fftLeft.getMagnitudeSpectrum());
-        scopeLeft.plot(spectrumLeft.getPlotX(), spectrumLeft.getPlotY(), spectrumLeft.getPlotNormal());
+        scopeLeft.plot(rangeComputer, spectrumLeft.getPlotX(), spectrumLeft.getPlotY(), spectrumLeft.getPlotNormal());
         scopeLeft.render();
 
         spectrumRight.update(fftRight.getMagnitudeSpectrum());
-        scopeRight.plot(spectrumRight.getPlotX(), spectrumRight.getPlotY(), spectrumRight.getPlotNormal());
+        scopeRight.plot(rangeComputer, spectrumRight.getPlotX(), spectrumRight.getPlotY(), spectrumRight.getPlotNormal());
         scopeRight.render();
 
         glfwSwapBuffers(window);

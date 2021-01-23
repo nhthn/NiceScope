@@ -90,24 +90,12 @@ void FFT::doFFT()
 {
     fftw_execute(m_fftwPlan);
 
-    float maxDb = 0;
     for (int i = 0; i < m_spectrumSize; i++) {
         float real = m_complexSpectrum[i][0];
         float imag = m_complexSpectrum[i][1];
         float magnitude = std::hypot(real, imag);
         float db = 20 * std::log10(magnitude);
-        if (db > maxDb) {
-            maxDb = db;
-        }
         m_magnitudeSpectrum[i] = db;
-    }
-
-    if (maxDb > m_maxDb) {
-        m_maxDb = maxDb;
-    }
-
-    for (int i = 0; i < m_spectrumSize; i++) {
-        m_magnitudeSpectrum[i] = (m_magnitudeSpectrum[i] - m_maxDb) / 60 + 1;
     }
 }
 
@@ -121,4 +109,38 @@ void FFT::process(Ingress& ingress)
         m_samples[i] = ingress.getOutputBuffer().get()[index] * m_window[i];
     }
     doFFT();
+}
+
+SpectralMaximum::SpectralMaximum(
+    int spectrumSize)
+    : m_spectrumSize(spectrumSize)
+{
+    m_magnitudeSpectrum.resize(spectrumSize);
+}
+
+void SpectralMaximum::set(std::vector<float> spectrum)
+{
+    for (int i = 0; i < m_spectrumSize; i++) {
+        m_magnitudeSpectrum[i] = spectrum[i];
+    }
+}
+
+void SpectralMaximum::computeMaximumWith(std::vector<float> spectrum)
+{
+    for (int i = 0; i < m_spectrumSize; i++) {
+        m_magnitudeSpectrum[i] = std::max(m_magnitudeSpectrum[i], spectrum[i]);
+    }
+}
+
+float SpectralMaximum::getMaximum()
+{
+    float result = m_magnitudeSpectrum[0];
+    for (int i = 1; i < m_spectrumSize; i++) {
+        result = std::max(result, m_magnitudeSpectrum[i]);
+    }
+    return result;
+}
+
+float RangeComputer::convertValueToScreenY(float value) {
+    return 2 * (value - getBottom()) / (getTop() - getBottom()) - 1;
 }
