@@ -13,11 +13,14 @@ void PortAudioBackend::run()
     handle_error(Pa_Initialize());
 
     int device = find_device();
+    auto device_info = Pa_GetDeviceInfo(device);
+
+    std::cout << "max input channels: " << device_info->maxInputChannels << std::endl;
 
     input_parameters.device = device;
     input_parameters.channelCount = m_numChannels;
     input_parameters.sampleFormat = sample_format;
-    input_parameters.suggestedLatency = 0.0;
+    input_parameters.suggestedLatency = device_info->defaultLowInputLatency;
     input_parameters.hostApiSpecificStreamInfo = nullptr;
 
     PaStreamFlags stream_flags = paNoFlag;
@@ -54,7 +57,7 @@ void PortAudioBackend::handle_error(PaError error)
     if (error == paNoError) {
         return;
     }
-    std::cerr << "PortAudio error, exiting :(" << std::endl;
+    std::cerr << "PortAudio error: " << Pa_GetErrorText(error) << ", exiting :(" << std::endl;
     throw std::runtime_error("PortAudio error");
 }
 
@@ -62,20 +65,38 @@ int PortAudioBackend::find_device()
 {
     PaHostApiIndex host_api_index = Pa_HostApiTypeIdToHostApiIndex(paJACK);
     if (host_api_index < 0) {
+#if (__APPLE__)
+        std::cerr << "JACK not found, trying CoreAudio" << std::endl;
+        host_api_index = Pa_HostApiTypeIdToHostApiIndex(paCoreAudio);
+        if (host_api_index < 0) {
+            return Pa_GetDefaultInputDevice();
+        }
+#else
         std::cerr << "JACK not found, using default device" << std::endl;
         return Pa_GetDefaultInputDevice();
+#endif
     }
 
+
     const PaHostApiInfo* host_api_info = Pa_GetHostApiInfo(host_api_index);
+
     int device_count = host_api_info->deviceCount;
     for (int i = 0; i < device_count; i++) {
         int device_index = Pa_HostApiDeviceIndexToDeviceIndex(host_api_index, i);
         const PaDeviceInfo* info = Pa_GetDeviceInfo(device_index);
         std::string name = info->name;
+        std::cout << name << std::endl;
         if (name == m_device) {
             return device_index;
         }
     }
+
+    std::cerr << "device named " << m_device << " not found, trying default device." << std::endl;
+    auto device_index = host_api_info->defaultInputDevice;
+    if (device_index != paNoDevice) {
+        return device_index;
+    }
+
     throw std::runtime_error("Couldn't find device.");
 }
 

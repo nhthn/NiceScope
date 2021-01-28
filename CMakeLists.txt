@@ -11,6 +11,7 @@ include_directories(
 if(APPLE)
     SET(CMAKE_CXX_STANDARD 11)
     include_directories(/usr/local/include)
+    link_directories(/usr/local/lib)
 endif()
 
 file(GLOB nicescope_files src/*.cpp)
@@ -25,6 +26,8 @@ target_link_libraries(
     portaudio_static
     fftw3
 )
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wpedantic")

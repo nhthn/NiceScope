@@ -15,7 +15,7 @@ public:
     void process(InputBuffer input_buffer, OutputBuffer output_buffer, int frame_count) override;
 
     void bufferSamples();
-    std::shared_ptr<float[]> getOutputBuffer() { return m_outputBuffer; };
+    const float* getOutputBuffer() { return m_outputBuffer.get(); };
     int getNumChannels() { return m_numChannels; };
     int getBufferSize() { return m_outputBufferSize; };
     int getWritePos() { return m_writePos; };
@@ -33,7 +33,7 @@ private:
 
     std::unique_ptr<float[]> m_scratchBuffer;
 
-    std::shared_ptr<float[]> m_outputBuffer;
+    std::unique_ptr<float[]> m_outputBuffer;
 };
 
 class FFT {
