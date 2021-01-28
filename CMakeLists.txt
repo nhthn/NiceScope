@@ -8,9 +8,13 @@ include_directories(
     third_party/portaudio/src/common/
 )
 
+if(APPLE)
+    SET(CMAKE_CXX_STANDARD 11)
+    include_directories(/usr/local/include)
+endif()
+
 file(GLOB nicescope_files src/*.cpp)
 add_executable(NiceScope ${nicescope_files})
-
 
 target_link_libraries(
     NiceScope
