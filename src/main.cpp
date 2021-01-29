@@ -121,7 +121,7 @@ int main(int argc, char** argv)
         glClear(GL_COLOR_BUFFER_BIT);
 
         callback.bufferSamples();
-/*
+
         fftLeft.process(callback);
         fftRight.process(callback);
         spectralMaximum.set(fftLeft.getMagnitudeSpectrum());
@@ -139,7 +139,7 @@ int main(int argc, char** argv)
         spectrumRight.update(fftRight.getMagnitudeSpectrum());
         scopeRight.plot(rangeComputer, spectrumRight.getPlotX(), spectrumRight.getPlotY(), spectrumRight.getPlotNormal());
         scopeRight.render();
-*/
+
         glfwSwapBuffers(window);
         glfwPollEvents();
 
