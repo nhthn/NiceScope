@@ -15,8 +15,6 @@ void PortAudioBackend::run()
     int device = find_device();
     auto device_info = Pa_GetDeviceInfo(device);
 
-    std::cout << "max input channels: " << device_info->maxInputChannels << std::endl;
-
     input_parameters.device = device;
     input_parameters.channelCount = m_numChannels;
     input_parameters.sampleFormat = sample_format;
@@ -85,7 +83,6 @@ int PortAudioBackend::find_device()
         int device_index = Pa_HostApiDeviceIndexToDeviceIndex(host_api_index, i);
         const PaDeviceInfo* info = Pa_GetDeviceInfo(device_index);
         std::string name = info->name;
-        std::cout << name << std::endl;
         if (name == m_device) {
             return device_index;
         }
