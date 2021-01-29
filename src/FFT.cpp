@@ -106,7 +106,7 @@ void FFT::process(Ingress& ingress)
         if (index < 0) {
             index += ingress.getBufferSize();
         }
-        m_samples[i] = ingress.getOutputBuffer().get()[index] * m_window[i];
+        m_samples[i] = ingress.getOutputBuffer()[index] * m_window[i];
     }
     doFFT();
 }
