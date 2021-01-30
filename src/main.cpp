@@ -50,7 +50,7 @@ GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle)
     glewInit();
 
     if (!glCreateShader) {
-        throw std::runtime_error("Unsuccessful GL initialization.");
+        throw std::runtime_error("Unsuccessful GLEW initialization.");
     }
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -114,7 +114,6 @@ int main(int argc, char** argv)
 
     std::array<float, 4> color = colorFromHex(0x1d1f21);
 
-    glfwSwapInterval(1);
     glClearColor(color[0], color[1], color[2], color[3]);
 
     while (!glfwWindowShouldClose(window)) {
