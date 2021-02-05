@@ -32,6 +32,13 @@ GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle)
     glfwWindowHint(GLFW_SAMPLES, 4);
     glEnable(GL_MULTISAMPLE);
 
+#if (__APPLE__)
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
+
     GLFWwindow* window = glfwCreateWindow(g_windowWidth, g_windowHeight, windowTitle, NULL, NULL);
     if (!window) {
         glfwTerminate();
@@ -41,6 +48,7 @@ GLFWwindow* setUpWindowAndOpenGL(const char* windowTitle)
 
     glewExperimental = GL_TRUE;
     glewInit();
+
     if (!glCreateShader) {
         throw std::runtime_error("Unsuccessful GLEW initialization.");
     }
@@ -106,8 +114,9 @@ int main(int argc, char** argv)
 
     std::array<float, 4> color = colorFromHex(0x1d1f21);
 
+    glClearColor(color[0], color[1], color[2], color[3]);
+
     while (!glfwWindowShouldClose(window)) {
-        glClearColor(color[0], color[1], color[2], color[3]);
         glClear(GL_COLOR_BUFFER_BIT);
 
         callback.bufferSamples();
